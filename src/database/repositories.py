@@ -113,3 +113,12 @@ class MaquinaRepository:
             cursor.executemany(query, alunos_fake)
             conn.commit()
             print(f"{len(alunos_fake)} alunos de teste semeados.")
+
+            
+    def salvar_alocacao(self, tag_maquina, nome_aluno):
+
+        """Salva o nome do aluno e muda o status da máquina no banco."""
+        query = "UPDATE maquinas SET status = 'OCUPADO', ocupante = ? WHERE tag = ?"
+        with self.db.connection() as conn:
+            conn.execute(query, (nome_aluno, tag_maquina))
+            conn.commit()

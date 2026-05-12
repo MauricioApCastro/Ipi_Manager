@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QFrame, QLabel, QPushButton, QGridLayout
-from src.database.repositories import MaquinaRepository
+from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QFrame, QLabel, QPushButton, QGridLayout,QMessageBox,QInputDialog
+from src.database.repositories import MaquinaRepository,AlunoRepository
 from src.ui.components.maquina_card import MaquinaCard
 
 class MainWindow(QMainWindow):
@@ -66,11 +66,52 @@ class MainWindow(QMainWindow):
         """Busca as máquinas no banco e as desenha na tela."""
         maquinas = self.repo_maquina.get_all()
         
-        # Limpa o grid se houver algo (bom para atualizações)
         for i in reversed(range(self.grid_maquinas.count())): 
             self.grid_maquinas.itemAt(i).widget().setParent(None)
 
-        # Adiciona os cards no grid (2 linhas de 4)
         for index, maq in enumerate(maquinas):
             card = MaquinaCard(maq)
+            
+            # CONEXÃO CRUCIAL: Aqui dizemos para o card usar a trava da MainWindow
+            card.solicitar_alocacao.connect(self.processar_alocacao)
+            
             self.grid_maquinas.addWidget(card, index // 4, index % 4)
+            
+    def processar_alocacao(self, card_que_pediu):
+        """Lógica que roda quando o botão do card é clicado."""
+        repo_aluno = AlunoRepository(self.db)
+        alunos = repo_aluno.get_all()
+        nomes = [aluno.nome for aluno in alunos]
+        
+        if not nomes:
+            QMessageBox.warning(self, "Aviso", "Nenhum aluno no banco.")
+            return
+
+        nome_sel, ok = QInputDialog.getItem(
+            self, "Alocação", 
+            f"Aluno para {card_que_pediu.maquina.tag}:", 
+            nomes, 0, False
+        )
+
+        if ok and nome_sel:
+            nome_normalizado = nome_sel.strip().upper()
+            
+            # Trava de segurança visual
+            ja_alocado = False
+            for i in range(self.grid_maquinas.count()):
+                widget = self.grid_maquinas.itemAt(i).widget()
+                if isinstance(widget, MaquinaCard):
+                    if widget.lbl_status.text().strip().upper() == nome_normalizado:
+                        ja_alocado = True
+                        break
+            
+            if ja_alocado:
+                QMessageBox.warning(self, "Aviso", f"O aluno {nome_sel} já está ocupando uma máquina!")
+                return 
+
+            # --- PARTE NOVA: PERSISTÊNCIA NO BANCO ---
+            # Aqui chamamos o repositório para gravar o ocupante
+            self.repo_maquina.salvar_alocacao(card_que_pediu.maquina.tag, nome_sel)
+
+            # Atualiza o visual
+            card_que_pediu.atualizar_status("OCUPADO", nome_sel)
