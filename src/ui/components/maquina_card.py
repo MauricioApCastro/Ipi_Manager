@@ -44,10 +44,14 @@ class MaquinaCard(QFrame):
 
     def atualizar_status(self, novo_status, aluno_nome=None):
         if novo_status == "OCUPADO":
-            self.lbl_status.setText(aluno_nome.upper())
+            nome_exibicao = aluno_nome.upper()
+            self.lbl_status.setText(nome_exibicao)
+            
+            # Se o nome tiver mais de 15 caracteres, diminui a fonte
+            if len(nome_exibicao) > 12:
+                self.lbl_status.setStyleSheet("font-size: 14px; font-weight: 900; color: #1e293b;")
+            else:
+                self.lbl_status.setStyleSheet("font-size: 20px; font-weight: 900; color: #1e293b;")
+                
             self.setStyleSheet("#CardMaquina { background-color: #dcfce7; border: 2px solid #22c55e; }")
             self.btn_acao.setText("Finalizar Aula")
-        else:
-            self.lbl_status.setText("VAGO")
-            self.setStyleSheet("#CardMaquina { background-color: white; border: 2px solid #e2e8f0; }")
-            self.btn_acao.setText("Alocar Aluno")
