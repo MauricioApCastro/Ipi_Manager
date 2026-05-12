@@ -1,33 +1,52 @@
 import sys
-import os
+from PyQt5.QtWidgets import QApplication
 from src.database.db_handler import Database
+from src.database.repositories import MaquinaRepository
+from src.ui.windows.main_window import MainWindow
+import os
+
+from src.database.repositories import MaquinaRepository, AlunoRepository # Adicione o AlunoRepository aqui
 
 def inicializar_sistema():
-    # 1. Instancia o gerenciador do banco
     db = Database()
-    
-    # 2. Define o caminho do script SQL
-    # Usamos o os.path para evitar problemas de caminho no Windows
     schema_path = os.path.join("src", "database", "schema.sql")
-    
-    # 3. Executa o script para criar as tabelas
-    print("Verificando banco de dados...")
     try:
         db.execute_script(schema_path)
-        print("Banco de Dados inicializado com sucesso!")
+        
+        # Semeia máquinas
+        repo_maq = MaquinaRepository(db)
+        repo_maq.seed_maquinas(8)
+        
+        # Semeia alunos de teste
+        repo_aluno = AlunoRepository(db)
+        repo_aluno.seed_alunos_teste()
+        
+        return db
     except Exception as e:
-        print(f"Erro ao inicializar o banco: {e}")
+        print(f"Erro: {e}")
         return None
-    
-    return db
+    db = Database()
+    schema_path = os.path.join("src", "database", "schema.sql")
+    try:
+        db.execute_script(schema_path)
+        repo_maq = MaquinaRepository(db)
+        repo_maq.seed_maquinas(8)
+        return db
+    except Exception as e:
+        print(f"Erro: {e}")
+        return None
 
 if __name__ == "__main__":
-    # Inicia o motor do sistema
+    # 1. Inicia a Aplicação Qt
+    app = QApplication(sys.argv)
+    
+    # 2. Inicia o Banco
     banco = inicializar_sistema()
     
     if banco:
-        print("Sistema pronto para operação.")
-        # Por enquanto, como não temos a UI pronta, o programa apenas termina aqui.
+        # 3. Abre a Janela Principal passando o banco
+        window = MainWindow(banco)
+        window.show()
+        sys.exit(app.exec_())
     else:
-        print("Falha crítica na inicialização.")
         sys.exit(1)

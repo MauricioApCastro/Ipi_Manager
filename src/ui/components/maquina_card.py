@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QFrame, QVBoxLayout, QLabel, QPushButton
+from PyQt5.QtWidgets import QFrame, QVBoxLayout, QLabel, QPushButton, QMessageBox
 from PyQt5.QtCore import Qt
 
 class MaquinaCard(QFrame):
@@ -59,3 +59,17 @@ class MaquinaCard(QFrame):
         elif novo_status == "DEFEITO":
             self.lbl_status.setText("MANUTENÇÃO")
             self.setStyleSheet("#CardMaquina { background-color: #fee2e2; border: 2px solid #ef4444; }")
+
+    def __init__(self, maquina_model, parent=None):
+        super().__init__(parent)
+        self.maquina = maquina_model
+        self.setup_ui()
+        # CONEXÃO DO CLIQUE
+        self.btn_acao.clicked.connect(self.ao_clicar_alocar)
+
+    def ao_clicar_alocar(self):
+        # Por enquanto, apenas um aviso para testar a comunicação
+        msg = QMessageBox()
+        msg.setWindowTitle("Alocação de Aluno")
+        msg.setText(f"Você clicou para alocar no {self.maquina.tag}")
+        msg.exec_()

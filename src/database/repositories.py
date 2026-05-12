@@ -1,7 +1,6 @@
 from typing import List, Optional
 from src.models.aluno import Aluno
-from src.models.maquina import Maquina  # Faltava esse import!
-
+from src.models.maquina import Maquina
 class AlunoRepository:
     def __init__(self, db):
         self.db = db
@@ -40,6 +39,29 @@ class AlunoRepository:
         with self.db.connection() as conn:
             row = conn.execute(query, (aluno_id,)).fetchone()
             return Aluno(*row) if row else None
+    
+    def seed_alunos_teste(self):
+        """Cria alunos fictícios para testar a interface."""
+        if len(self.get_all()) > 0:
+            return
+
+        alunos_fake = [
+            ("Maurício", "11999999999", "", "123.456.789-00", "15/05/1990"),
+            ("Ana Paula", "11888888888", "", "987.654.321-11", "20/10/1985"),
+            ("Carlos Eduardo", "", "11777777777", "444.555.666-77", "10/01/2012"), # Menor de idade
+            ("Mariana Silva", "11666666666", "", "222.333.111-88", "05/03/1998")
+        ]
+
+        query = """
+            INSERT INTO alunos (nome, whatsapp_aluno, whatsapp_resp, cpf, nascimento)
+            VALUES (?, ?, ?, ?, ?)
+        """
+        with self.db.connection() as conn:
+            cursor = conn.cursor()
+            cursor.executemany(query, alunos_fake)
+            conn.commit()
+            print(f"{len(alunos_fake)} alunos de teste semeados.")
+
 
         
 class MaquinaRepository:
@@ -69,3 +91,25 @@ class MaquinaRepository:
                 cursor.execute(query, (tag, "ATIVO"))
             conn.commit()
             print(f"{quantidade} máquinas semeadas no banco.")
+
+    
+        """Cria alunos fictícios para testar a interface."""
+        if len(self.get_all()) > 0:
+            return
+
+        alunos_fake = [
+            ("Maurício", "11999999999", "", "123.456.789-00", "15/05/1990"),
+            ("Ana Paula", "11888888888", "", "987.654.321-11", "20/10/1985"),
+            ("Carlos Eduardo", "", "11777777777", "444.555.666-77", "10/01/2012"), # Menor de idade
+            ("Mariana Silva", "11666666666", "", "222.333.111-88", "05/03/1998")
+        ]
+
+        query = """
+            INSERT INTO alunos (nome, whatsapp_aluno, whatsapp_resp, cpf, nascimento)
+            VALUES (?, ?, ?, ?, ?)
+        """
+        with self.db.connection() as conn:
+            cursor = conn.cursor()
+            cursor.executemany(query, alunos_fake)
+            conn.commit()
+            print(f"{len(alunos_fake)} alunos de teste semeados.")
