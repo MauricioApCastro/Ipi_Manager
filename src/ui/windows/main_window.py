@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QFrame, QLabel, QPushButton, QGridLayout,QMessageBox,QInputDialog
 from src.database.repositories import MaquinaRepository,AlunoRepository
 from src.ui.components.maquina_card import MaquinaCard
+from src.ui.components.seletor_aluno import SeletorAlunoDialog
 
 class MainWindow(QMainWindow):
     def __init__(self, db):
@@ -114,4 +115,32 @@ class MainWindow(QMainWindow):
             self.repo_maquina.salvar_alocacao(card_que_pediu.maquina.tag, nome_sel)
 
             # Atualiza o visual
+            card_que_pediu.atualizar_status("OCUPADO", nome_sel)
+    
+    def processar_alocacao(self, card_que_pediu):
+        """Lógica com Seletor de Abas (Turma e Todos)."""
+        repo_aluno = AlunoRepository(self.db)
+        todos_alunos = repo_aluno.get_all()
+        
+        # Lógica de ADS: Por agora, simulamos a turma com os 5 primeiros.
+        # No futuro, filtraremos pelo horário atual.
+        alunos_turma = todos_alunos[:5] 
+
+        # Abre a nossa nova janela customizada
+        seletor = SeletorAlunoDialog(alunos_turma, todos_alunos, self)
+        
+        if seletor.exec_():
+            nome_sel = seletor.aluno_selecionado
+            nome_normalizado = nome_sel.strip().upper()
+            
+            # Trava de Duplicidade
+            for i in range(self.grid_maquinas.count()):
+                widget = self.grid_maquinas.itemAt(i).widget()
+                if isinstance(widget, MaquinaCard):
+                    if widget.lbl_status.text().strip().upper() == nome_normalizado:
+                        QMessageBox.warning(self, "Bloqueio", f"{nome_sel} já está alocado!")
+                        return
+
+            # Se passar na trava, salva e atualiza o visual
+            self.repo_maquina.salvar_alocacao(card_que_pediu.maquina.tag, nome_sel)
             card_que_pediu.atualizar_status("OCUPADO", nome_sel)
