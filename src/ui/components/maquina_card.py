@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QFrame, QVBoxLayout, QLabel, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QFrame, QVBoxLayout, QLabel, QPushButton, QMessageBox,QInputDialog
 from PyQt5.QtCore import Qt
 
 class MaquinaCard(QFrame):
@@ -68,8 +68,21 @@ class MaquinaCard(QFrame):
         self.btn_acao.clicked.connect(self.ao_clicar_alocar)
 
     def ao_clicar_alocar(self):
-        # Por enquanto, apenas um aviso para testar a comunicação
-        msg = QMessageBox()
-        msg.setWindowTitle("Alocação de Aluno")
-        msg.setText(f"Você clicou para alocar no {self.maquina.tag}")
-        msg.exec_()
+        # 1. Por enquanto, vamos simular a busca de nomes. 
+        # (Em breve faremos o card buscar isso do banco via sinal)
+        nomes_teste = ["Maurício", "Ana Paula", "Carlos Eduardo", "Mariana Silva"]
+        
+        # 2. Abre a janelinha de seleção
+        aluno_selecionado, ok = QInputDialog.getItem(
+            self, 
+            "Alocação", 
+            f"Selecione o aluno para o {self.maquina.tag}:", 
+            nomes_teste, 
+            0, 
+            False
+        )
+
+        # 3. Se o usuário clicou em OK e escolheu um nome
+        if ok and aluno_selecionado:
+            # Simulamos o status de ocupado por enquanto
+            self.atualizar_status("OCUPADO", aluno_selecionado)
