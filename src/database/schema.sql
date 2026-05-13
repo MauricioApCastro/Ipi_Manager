@@ -1,4 +1,4 @@
--- Habilita chaves estrangeiras para manter a integridade
+-- Habilita chaves estrangeiras
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS alunos (
@@ -6,8 +6,9 @@ CREATE TABLE IF NOT EXISTS alunos (
     nome TEXT NOT NULL,
     whatsapp_aluno TEXT,
     whatsapp_resp TEXT,
-    cpf TEXT UNIQUE,
-    nascimento TEXT
+    cpf TEXT,
+    nascimento TEXT,
+    licao_atual INTEGER DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS cursos (
@@ -28,8 +29,9 @@ CREATE TABLE IF NOT EXISTS modulos (
 
 CREATE TABLE IF NOT EXISTS maquinas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tag TEXT NOT NULL UNIQUE, -- PC-01, PC-02...
-    status TEXT DEFAULT 'ATIVO' -- 'ATIVO', 'MANUTENCAO', 'DEFEITO'
+    tag TEXT NOT NULL UNIQUE,
+    status TEXT DEFAULT 'VAGO',
+    ocupante TEXT 
 );
 
 CREATE TABLE IF NOT EXISTS turmas (
@@ -37,5 +39,5 @@ CREATE TABLE IF NOT EXISTS turmas (
     nome TEXT NOT NULL,
     dia_semana TEXT,
     horario TEXT,
-    capacidade_manual INTEGER -- Caso queira limitar abaixo do total de PCs
+    capacidade_manual INTEGER 
 );

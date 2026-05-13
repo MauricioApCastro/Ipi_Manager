@@ -47,11 +47,16 @@ class MaquinaCard(QFrame):
             nome_exibicao = aluno_nome.upper()
             self.lbl_status.setText(nome_exibicao)
             
-            # Se o nome tiver mais de 15 caracteres, diminui a fonte
-            if len(nome_exibicao) > 12:
-                self.lbl_status.setStyleSheet("font-size: 14px; font-weight: 900; color: #1e293b;")
-            else:
-                self.lbl_status.setStyleSheet("font-size: 20px; font-weight: 900; color: #1e293b;")
-                
+            # Reaplicando a lógica do Método 2: Fonte dinâmica para não cortar
+            tamanho_fonte = "14px" if len(nome_exibicao) > 12 else "20px"
+            
+            self.lbl_status.setStyleSheet(f"font-size: {tamanho_fonte}; font-weight: 900; color: #1e293b;")
             self.setStyleSheet("#CardMaquina { background-color: #dcfce7; border: 2px solid #22c55e; }")
             self.btn_acao.setText("Finalizar Aula")
+            
+        else: # Status VAGO
+            self.lbl_status.setText("VAGO")
+            # Resetamos para o tamanho padrão (20px) para o texto "VAGO" caber bem
+            self.lbl_status.setStyleSheet("font-size: 20px; font-weight: 900; color: #64748b;")
+            self.setStyleSheet("#CardMaquina { background-color: white; border: 2px solid #e2e8f0; }")
+            self.btn_acao.setText("Alocar Aluno")
