@@ -14,8 +14,8 @@ from PyQt5.QtWidgets import (
     QScrollArea,
     QStackedWidget,
 )
-from PyQt5.QtCore import Qt, QUrl
-from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtCore import Qt, QTimer, QUrl
+from PyQt5.QtGui import QCursor, QDesktopServices
 
 from src.database.repositories import MaquinaRepository, AlunoRepository
 from src.ui.components.maquina_card import MaquinaCard
@@ -34,8 +34,8 @@ class MainWindow(QMainWindow):
         self.repo_aluno = AlunoRepository(self.db)
         self.menu_buttons = {}
         self.setWindowTitle("IPI PRO - Gestão de Sala")
-        self.resize(1280, 850)
-        self.setMinimumSize(980, 680)
+        self.resize(1280, 960)
+        self.setMinimumSize(1024, 720)
         self.setup_ui()
         self.carregar_maquinas()
 
@@ -53,15 +53,12 @@ class MainWindow(QMainWindow):
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
 
-        self.sidebar = self._criar_sidebar()
-        self.main_layout.addWidget(self.sidebar)
-
         self.stack = QStackedWidget()
 
         self.content_area = QWidget()
         self.content_area.setStyleSheet("background-color: #f4f7fb;")
         self.content_layout = QVBoxLayout(self.content_area)
-        self.content_layout.setContentsMargins(34, 30, 34, 28)
+        self.content_layout.setContentsMargins(26, 24, 26, 24)
         self.content_layout.setSpacing(18)
 
         self._criar_header()
@@ -79,15 +76,64 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.financeiro_window)
         self.main_layout.addWidget(self.stack)
 
+        self.sidebar = self._criar_sidebar()
+        self.sidebar.setParent(self.central_widget)
+        self._posicionar_sidebar()
+
         self.menu_buttons["Visão geral"].clicked.connect(lambda: self._trocar_tela(0, "Visão geral"))
         self.menu_buttons["Alunos"].clicked.connect(lambda: self._trocar_tela(1, "Alunos"))
         self.menu_buttons["Turmas"].clicked.connect(lambda: self._trocar_tela(2, "Turmas"))
         self.menu_buttons["Cursos"].clicked.connect(lambda: self._trocar_tela(3, "Cursos"))
         self.menu_buttons["Financeiro"].clicked.connect(lambda: self._trocar_tela(4, "Financeiro"))
+        self._configurar_sidebar_retratil()
+
+    def _configurar_sidebar_retratil(self):
+        self.sidebar_trigger_width = 12
+        self.sidebar_hide_margin = 36
+        self.sidebar.hide()
+
+        self.sidebar_timer = QTimer(self)
+        self.sidebar_timer.setInterval(90)
+        self.sidebar_timer.timeout.connect(self._atualizar_sidebar_retratil)
+        self.sidebar_timer.start()
+
+    def _atualizar_sidebar_retratil(self):
+        pos = self.mapFromGlobal(QCursor.pos())
+        dentro_janela = self.rect().contains(pos)
+
+        if not dentro_janela:
+            self._ocultar_sidebar()
+            return
+
+        if pos.x() <= self.sidebar_trigger_width:
+            self._mostrar_sidebar()
+            return
+
+        limite_sidebar = self.sidebar.width() + self.sidebar_hide_margin
+        if self.sidebar.isVisible() and pos.x() > limite_sidebar:
+            self._ocultar_sidebar()
+
+    def _mostrar_sidebar(self):
+        if not self.sidebar.isVisible():
+            self._posicionar_sidebar()
+            self.sidebar.show()
+            self.sidebar.raise_()
+
+    def _ocultar_sidebar(self):
+        if self.sidebar.isVisible():
+            self.sidebar.hide()
+
+    def _posicionar_sidebar(self):
+        self.sidebar.setGeometry(0, 0, self.sidebar.width(), self.central_widget.height())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "sidebar"):
+            self._posicionar_sidebar()
 
     def _criar_sidebar(self):
         sidebar = QFrame()
-        sidebar.setFixedWidth(248)
+        sidebar.setFixedWidth(300)
         sidebar.setObjectName("Sidebar")
         sidebar.setStyleSheet("""
             #Sidebar {
@@ -102,13 +148,13 @@ class MainWindow(QMainWindow):
         """)
 
         layout = QVBoxLayout(sidebar)
-        layout.setContentsMargins(20, 28, 20, 28)
-        layout.setSpacing(8)
+        layout.setContentsMargins(22, 28, 22, 28)
+        layout.setSpacing(10)
 
         logo = QLabel("IPI PRO")
         logo.setStyleSheet("""
             color: #f8fafc;
-            font-size: 25px;
+            font-size: 33px;
             font-weight: 900;
             padding: 0 6px 2px 6px;
         """)
@@ -117,7 +163,7 @@ class MainWindow(QMainWindow):
         subtitle = QLabel("Gestão de Sala")
         subtitle.setStyleSheet("""
             color: #94a3b8;
-            font-size: 12px;
+            font-size: 20px;
             font-weight: 600;
             padding: 0 6px 24px 6px;
         """)
@@ -144,7 +190,7 @@ class MainWindow(QMainWindow):
         footer = QLabel("Sistema IPI")
         footer.setStyleSheet("""
             color: #64748b;
-            font-size: 11px;
+            font-size: 20px;
             font-weight: 600;
             padding: 12px 6px 0 6px;
         """)
@@ -157,11 +203,11 @@ class MainWindow(QMainWindow):
             QPushButton {
                 color: #cbd5e1;
                 text-align: left;
-                padding: 13px 16px;
+                padding: 16px 18px;
                 border: none;
                 border-radius: 12px;
                 background: transparent;
-                font-size: 14px;
+                font-size: 20px;
                 font-weight: 700;
             }
 
@@ -196,7 +242,7 @@ class MainWindow(QMainWindow):
 
     def _criar_header(self):
         header = QHBoxLayout()
-        header.setSpacing(18)
+        header.setSpacing(14)
 
         title_box = QVBoxLayout()
         title_box.setSpacing(4)
@@ -204,7 +250,7 @@ class MainWindow(QMainWindow):
         self.lbl_titulo = QLabel("Painel de Máquinas")
         self.lbl_titulo.setStyleSheet("""
             color: #0f172a;
-            font-size: 38px;
+            font-size: 50px;
             font-weight: 900;
         """)
 
@@ -221,8 +267,8 @@ class MainWindow(QMainWindow):
                 color: #0f172a;
                 border: 1px solid #dbe3ef;
                 border-radius: 14px;
-                padding: 12px 18px;
-                font-size: 13px;
+                padding: 15px 22px;
+                font-size: 20px;
                 font-weight: 800;
             }
 
@@ -268,8 +314,8 @@ class MainWindow(QMainWindow):
 
         self.grid_maquinas = QGridLayout(self.grid_container)
         self.grid_maquinas.setContentsMargins(0, 8, 8, 18)
-        self.grid_maquinas.setHorizontalSpacing(22)
-        self.grid_maquinas.setVerticalSpacing(22)
+        self.grid_maquinas.setHorizontalSpacing(18)
+        self.grid_maquinas.setVerticalSpacing(18)
         for coluna in range(4):
             self.grid_maquinas.setColumnStretch(coluna, 1)
 

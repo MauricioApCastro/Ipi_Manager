@@ -5,7 +5,7 @@ class SeletorAlunoDialog(QDialog):
     def __init__(self, alunos_turma, todos_alunos, parent=None, titulo_turma="Alunos do horário"):
         super().__init__(parent)
         self.setWindowTitle("Selecionar Aluno")
-        self.setFixedSize(400, 500)
+        self.setFixedSize(620, 720)
         self.aluno_selecionado = None
 
         layout = QVBoxLayout(self)
@@ -26,7 +26,7 @@ class SeletorAlunoDialog(QDialog):
         self.tabs.addTab(self.lista_todos, "Todos / exceção")
 
         aviso = QLabel("Use a segunda aba somente para inclusão por exceção.")
-        aviso.setStyleSheet("color: #64748b; font-size: 12px; font-weight: 600;")
+        aviso.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
         layout.addWidget(aviso)
         layout.addWidget(self.tabs)
 

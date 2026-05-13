@@ -21,7 +21,7 @@ class MaquinaCard(QFrame):
         self.setup_ui()
 
     def setup_ui(self):
-        self.setMinimumSize(220, 235)
+        self.setMinimumSize(260, 300)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setObjectName("MaquinaCard")
 
@@ -44,9 +44,9 @@ class MaquinaCard(QFrame):
         self.lbl_tag.setStyleSheet("""
             background-color: #eff6ff;
             color: #2563eb;
-            padding: 6px 12px;
+            padding: 8px 14px;
             border-radius: 12px;
-            font-size: 11px;
+            font-size: 20px;
             font-weight: 800;
         """)
 
@@ -62,7 +62,7 @@ class MaquinaCard(QFrame):
         self.lbl_status.setWordWrap(True)
         self.lbl_status.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.lbl_status.setStyleSheet("""
-            font-size: 26px;
+            font-size: 34px;
             font-weight: 800;
             color: #0f172a;
             margin-top: 6px;
@@ -72,11 +72,11 @@ class MaquinaCard(QFrame):
         self.lbl_info_academica = QLabel("")
         self.lbl_info_academica.setStyleSheet("""
             color: #2563eb;
-            font-size: 12px;
+            font-size: 20px;
             font-weight: 700;
             background: #eff6ff;
             border-radius: 10px;
-            padding: 7px 10px;
+            padding: 10px 12px;
         """)
         self.lbl_info_academica.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.lbl_info_academica.hide()
@@ -86,11 +86,11 @@ class MaquinaCard(QFrame):
         self.txt_obs.setPlaceholderText("Anotacoes da aula...")
         self.txt_obs.setStyleSheet("""
             QLineEdit {
-                font-size: 13px;
+                font-size: 20px;
                 color: #0f172a;
                 border: 1px solid #dbe3ef;
                 border-radius: 12px;
-                padding: 10px 12px;
+                padding: 12px 14px;
                 background: #f8fafc;
             }
 
@@ -112,9 +112,9 @@ class MaquinaCard(QFrame):
                 color: white;
                 border: none;
                 border-radius: 14px;
-                padding: 13px;
+                padding: 16px;
                 font-weight: 800;
-                font-size: 13px;
+                font-size: 20px;
             }
 
             QPushButton:hover {
@@ -157,9 +157,9 @@ class MaquinaCard(QFrame):
             self.lbl_badge.setStyleSheet("""
                 background-color: #dbeafe;
                 color: #1d4ed8;
-                padding: 6px 10px;
+                padding: 8px 12px;
                 border-radius: 12px;
-                font-size: 10px;
+                font-size: 20px;
                 font-weight: 800;
             """)
             self.btn_acao.setText("Liberar / editar")
@@ -174,9 +174,9 @@ class MaquinaCard(QFrame):
             self.lbl_badge.setStyleSheet("""
                 background-color: #dcfce7;
                 color: #15803d;
-                padding: 6px 10px;
+                padding: 8px 12px;
                 border-radius: 12px;
-                font-size: 10px;
+                font-size: 20px;
                 font-weight: 800;
             """)
             self.btn_acao.setText("Alocar aluno")

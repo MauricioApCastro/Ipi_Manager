@@ -41,9 +41,9 @@ class FinanceiroWindow(QWidget):
         layout.setSpacing(12)
 
         titulo = QLabel("Financeiro")
-        titulo.setStyleSheet("color: #0f172a; font-size: 32px; font-weight: 900;")
+        titulo.setStyleSheet("color: #0f172a; font-size: 42px; font-weight: 900;")
         subtitulo = QLabel("Gere recibos em planilha para enviar ao aluno.")
-        subtitulo.setStyleSheet("color: #64748b; font-size: 13px; font-weight: 600;")
+        subtitulo.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
         layout.addWidget(titulo)
         layout.addWidget(subtitulo)
 
@@ -114,7 +114,7 @@ class FinanceiroWindow(QWidget):
             border: 1px solid #fed7aa;
             border-radius: 10px;
             padding: 10px;
-            font-size: 13px;
+            font-size: 20px;
             font-weight: 800;
         """)
 
@@ -148,7 +148,7 @@ class FinanceiroWindow(QWidget):
         self.lbl_preview.setWordWrap(True)
         self.lbl_preview.setStyleSheet("""
             color: #0f172a;
-            font-size: 15px;
+            font-size: 20px;
             font-weight: 700;
             line-height: 1.4;
             border: none;
@@ -164,7 +164,7 @@ class FinanceiroWindow(QWidget):
         self.lbl_pendentes_mes = QLabel("")
         self.lbl_pendentes_mes.setStyleSheet("""
             color: #9a3412;
-            font-size: 13px;
+            font-size: 20px;
             font-weight: 800;
             border: none;
         """)
@@ -387,7 +387,7 @@ class FinanceiroWindow(QWidget):
         layout.setSpacing(10)
 
         label = QLabel(titulo)
-        label.setStyleSheet("color: #0f172a; font-size: 15px; font-weight: 900; border: none;")
+        label.setStyleSheet("color: #0f172a; font-size: 20px; font-weight: 900; border: none;")
         layout.addWidget(label)
         return painel
 
@@ -412,7 +412,7 @@ class FinanceiroWindow(QWidget):
                 border: none;
                 gridline-color: #e2e8f0;
                 color: #0f172a;
-                font-size: 13px;
+                font-size: 20px;
                 alternate-background-color: #f8fafc;
             }
 
@@ -433,7 +433,7 @@ class FinanceiroWindow(QWidget):
                 border: 1px solid #dbe3ef;
                 border-radius: 10px;
                 padding: 7px 10px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 600;
             }
         """
@@ -446,7 +446,7 @@ class FinanceiroWindow(QWidget):
                 border: none;
                 border-radius: 11px;
                 padding: 10px 12px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 800;
             }
 
@@ -463,7 +463,7 @@ class FinanceiroWindow(QWidget):
                 border: none;
                 border-radius: 11px;
                 padding: 10px 12px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 800;
             }
 

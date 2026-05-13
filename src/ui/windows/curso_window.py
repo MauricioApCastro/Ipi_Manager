@@ -43,9 +43,9 @@ class CursoWindow(QWidget):
         title_box.setSpacing(2)
 
         titulo = QLabel("Cursos")
-        titulo.setStyleSheet("color: #0f172a; font-size: 28px; font-weight: 900;")
+        titulo.setStyleSheet("color: #0f172a; font-size: 36px; font-weight: 900;")
         subtitulo = QLabel("Cronograma principal de 14 meses, com módulos flexíveis para exceções.")
-        subtitulo.setStyleSheet("color: #64748b; font-size: 13px; font-weight: 600;")
+        subtitulo.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
 
         title_box.addWidget(titulo)
         title_box.addWidget(subtitulo)
@@ -155,7 +155,7 @@ class CursoWindow(QWidget):
         self._preparar_campo(self.combo_pre_requisito)
 
         self.check_flexivel = QCheckBox("Permitir troca de ordem em exceções")
-        self.check_flexivel.setStyleSheet("color: #334155; font-size: 13px; font-weight: 700;")
+        self.check_flexivel.setStyleSheet("color: #334155; font-size: 20px; font-weight: 700;")
 
         botoes = QGridLayout()
         botoes.setHorizontalSpacing(10)
@@ -499,7 +499,7 @@ class CursoWindow(QWidget):
         layout.setSpacing(7)
 
         label = QLabel(titulo)
-        label.setStyleSheet("color: #0f172a; font-size: 15px; font-weight: 900; border: none;")
+        label.setStyleSheet("color: #0f172a; font-size: 20px; font-weight: 900; border: none;")
         layout.addWidget(label)
         return painel
 
@@ -527,7 +527,7 @@ class CursoWindow(QWidget):
                 border: none;
                 gridline-color: #e2e8f0;
                 color: #0f172a;
-                font-size: 13px;
+                font-size: 20px;
                 alternate-background-color: #f8fafc;
             }
 
@@ -548,7 +548,7 @@ class CursoWindow(QWidget):
                 border: 1px solid #dbe3ef;
                 border-radius: 10px;
                 padding: 7px 10px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 600;
             }
 
@@ -566,7 +566,7 @@ class CursoWindow(QWidget):
                 border: none;
                 border-radius: 11px;
                 padding: 10px 12px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 800;
             }
 
@@ -583,7 +583,7 @@ class CursoWindow(QWidget):
                 border: 1px solid #dbe3ef;
                 border-radius: 11px;
                 padding: 10px 12px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 800;
             }
 
@@ -601,7 +601,7 @@ class CursoWindow(QWidget):
                 border: 1px solid #fecdd3;
                 border-radius: 11px;
                 padding: 10px 12px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 800;
             }
 

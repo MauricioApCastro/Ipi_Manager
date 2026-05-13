@@ -6,20 +6,20 @@ class CadastroAlunoWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Cadastrar Novo Aluno")
-        self.setFixedSize(450, 550)
+        self.setFixedSize(680, 760)
         self.setup_ui()
 
     def setup_ui(self):
         self.setStyleSheet("background-color: #f8fafc;")
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setContentsMargins(38, 38, 38, 38)
 
         titulo = QLabel("Novo Aluno")
-        titulo.setStyleSheet("font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 20px;")
+        titulo.setStyleSheet("font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 20px;")
         layout.addWidget(titulo)
 
         form = QFormLayout()
-        form.setSpacing(15)
+        form.setSpacing(20)
 
         # Campos de Texto Estilizados
         self.txt_nome = self._criar_input("Nome Completo")
@@ -32,7 +32,7 @@ class CadastroAlunoWindow(QDialog):
         self.date_nascimento.setCalendarPopup(True)
         self.date_nascimento.setDate(QDate.currentDate().addYears(-10))
         self.date_nascimento.setStyleSheet("""
-            QDateEdit { padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; }
+            QDateEdit { font-size: 20px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; }
         """)
 
         form.addRow("Nome:", self.txt_nome)
@@ -50,10 +50,10 @@ class CadastroAlunoWindow(QDialog):
         self.btn_salvar = QPushButton("Salvar Cadastro")
         
         self.btn_salvar.setStyleSheet("""
-            QPushButton { background-color: #3b82f6; color: white; font-weight: bold; padding: 12px; border-radius: 6px; }
+            QPushButton { background-color: #3b82f6; color: white; font-size: 20px; font-weight: bold; padding: 16px; border-radius: 6px; }
             QPushButton:hover { background-color: #2563eb; }
         """)
-        self.btn_cancelar.setStyleSheet("padding: 12px; border: none; color: #64748b;")
+        self.btn_cancelar.setStyleSheet("font-size: 20px; padding: 16px; border: none; color: #64748b;")
 
         btn_layout.addWidget(self.btn_cancelar)
         btn_layout.addWidget(self.btn_salvar)
@@ -67,7 +67,7 @@ class CadastroAlunoWindow(QDialog):
         edit = QLineEdit()
         edit.setPlaceholderText(placeholder)
         edit.setStyleSheet("""
-            QLineEdit { padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; }
+            QLineEdit { font-size: 20px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; }
             QLineEdit:focus { border: 1px solid #3b82f6; }
         """)
         return edit

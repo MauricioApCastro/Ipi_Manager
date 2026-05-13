@@ -38,9 +38,9 @@ class TurmaWindow(QWidget):
         title_box.setSpacing(2)
 
         titulo = QLabel("Turmas")
-        titulo.setStyleSheet("color: #0f172a; font-size: 32px; font-weight: 900;")
+        titulo.setStyleSheet("color: #0f172a; font-size: 42px; font-weight: 900;")
         subtitulo = QLabel("Forme turmas com 2 aulas semanais de 1 hora e vagas conforme os 8 PCs.")
-        subtitulo.setStyleSheet("color: #64748b; font-size: 13px; font-weight: 600;")
+        subtitulo.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
 
         title_box.addWidget(titulo)
         title_box.addWidget(subtitulo)
@@ -82,7 +82,7 @@ class TurmaWindow(QWidget):
         self._preparar_campo(self.spin_capacidade)
 
         regra = QLabel("Regra fixa: 2 aulas por semana, 60 minutos cada.")
-        regra.setStyleSheet("color: #64748b; font-size: 12px; font-weight: 700;")
+        regra.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 700;")
 
         botoes = QGridLayout()
         botoes.setHorizontalSpacing(10)
@@ -286,7 +286,7 @@ class TurmaWindow(QWidget):
         layout.setSpacing(10)
 
         label = QLabel(titulo)
-        label.setStyleSheet("color: #0f172a; font-size: 15px; font-weight: 900; border: none;")
+        label.setStyleSheet("color: #0f172a; font-size: 20px; font-weight: 900; border: none;")
         layout.addWidget(label)
         return painel
 
@@ -311,7 +311,7 @@ class TurmaWindow(QWidget):
                 border: none;
                 gridline-color: #e2e8f0;
                 color: #0f172a;
-                font-size: 13px;
+                font-size: 20px;
                 alternate-background-color: #f8fafc;
             }
 
@@ -332,7 +332,7 @@ class TurmaWindow(QWidget):
                 border: 1px solid #dbe3ef;
                 border-radius: 10px;
                 padding: 7px 10px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 600;
             }
 
@@ -350,7 +350,7 @@ class TurmaWindow(QWidget):
                 border: none;
                 border-radius: 11px;
                 padding: 10px 12px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 800;
             }
 
@@ -367,7 +367,7 @@ class TurmaWindow(QWidget):
                 border: 1px solid #dbe3ef;
                 border-radius: 11px;
                 padding: 10px 12px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 800;
             }
 
@@ -385,7 +385,7 @@ class TurmaWindow(QWidget):
                 border: 1px solid #fecdd3;
                 border-radius: 11px;
                 padding: 10px 12px;
-                font-size: 13px;
+                font-size: 20px;
                 font-weight: 800;
             }
 
