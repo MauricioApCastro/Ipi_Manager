@@ -10,12 +10,15 @@ CREATE TABLE IF NOT EXISTS alunos (
     nascimento TEXT,
     licao_atual INTEGER DEFAULT 1,
     modulo_atual TEXT DEFAULT 'Introdução',
-    observacoes TEXT 
+    observacoes TEXT,
+    turma_id INTEGER,
+    FOREIGN KEY (turma_id) REFERENCES turmas(id)
 );
 
 CREATE TABLE IF NOT EXISTS cursos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
+    duracao_meses INTEGER DEFAULT 14,
     valor_base REAL DEFAULT 135.00
 );
 
@@ -24,9 +27,20 @@ CREATE TABLE IF NOT EXISTS modulos (
     id_curso INTEGER,
     nome TEXT NOT NULL,
     ordem INTEGER,
+    carga_meses INTEGER DEFAULT 1,
+    permite_flexibilidade INTEGER DEFAULT 0,
     pre_requisito_id INTEGER,
     FOREIGN KEY (id_curso) REFERENCES cursos(id),
     FOREIGN KEY (pre_requisito_id) REFERENCES modulos(id)
+);
+
+CREATE TABLE IF NOT EXISTS aulas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_modulo INTEGER NOT NULL,
+    titulo TEXT NOT NULL,
+    ordem INTEGER,
+    observacoes TEXT,
+    FOREIGN KEY (id_modulo) REFERENCES modulos(id)
 );
 
 CREATE TABLE IF NOT EXISTS maquinas (
@@ -41,5 +55,36 @@ CREATE TABLE IF NOT EXISTS turmas (
     nome TEXT NOT NULL,
     dia_semana TEXT,
     horario TEXT,
+    segundo_dia_semana TEXT,
+    segundo_horario TEXT,
+    duracao_aula_minutos INTEGER DEFAULT 60,
+    aulas_por_semana INTEGER DEFAULT 2,
     capacidade_manual INTEGER 
+);
+
+CREATE TABLE IF NOT EXISTS aluno_modulos (
+    aluno_id INTEGER NOT NULL,
+    modulo_id INTEGER NOT NULL,
+    PRIMARY KEY (aluno_id, modulo_id),
+    FOREIGN KEY (aluno_id) REFERENCES alunos(id),
+    FOREIGN KEY (modulo_id) REFERENCES modulos(id)
+);
+
+CREATE TABLE IF NOT EXISTS presencas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    aluno_id INTEGER NOT NULL,
+    maquina_tag TEXT,
+    data_hora TEXT NOT NULL,
+    observacao TEXT,
+    FOREIGN KEY (aluno_id) REFERENCES alunos(id)
+);
+
+CREATE TABLE IF NOT EXISTS mensagens_responsavel (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    aluno_id INTEGER NOT NULL,
+    telefone TEXT,
+    mensagem TEXT NOT NULL,
+    data_hora TEXT NOT NULL,
+    status TEXT DEFAULT 'GERADA',
+    FOREIGN KEY (aluno_id) REFERENCES alunos(id)
 );

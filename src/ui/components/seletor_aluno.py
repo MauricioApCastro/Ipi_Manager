@@ -1,8 +1,8 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QListWidget, QPushButton, QHBoxLayout
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QListWidget, QPushButton, QHBoxLayout, QLabel
 from PyQt5.QtCore import Qt
 
 class SeletorAlunoDialog(QDialog):
-    def __init__(self, alunos_turma, todos_alunos, parent=None):
+    def __init__(self, alunos_turma, todos_alunos, parent=None, titulo_turma="Alunos do horário"):
         super().__init__(parent)
         self.setWindowTitle("Selecionar Aluno")
         self.setFixedSize(400, 500)
@@ -13,14 +13,21 @@ class SeletorAlunoDialog(QDialog):
 
         # Aba 1: Alunos da Turma (Filtrados)
         self.lista_turma = QListWidget()
-        self.lista_turma.addItems([a.nome for a in alunos_turma])
-        self.tabs.addTab(self.lista_turma, "Alunos da Turma")
+        if alunos_turma:
+            self.lista_turma.addItems([a.nome for a in alunos_turma])
+        else:
+            self.lista_turma.addItem("Nenhum aluno no horário atual")
+            self.lista_turma.item(0).setFlags(Qt.NoItemFlags)
+        self.tabs.addTab(self.lista_turma, titulo_turma)
 
         # Aba 2: Todos os Alunos (Base completa)
         self.lista_todos = QListWidget()
         self.lista_todos.addItems([a.nome for a in todos_alunos])
-        self.tabs.addTab(self.lista_todos, "Todos os Alunos")
+        self.tabs.addTab(self.lista_todos, "Todos / exceção")
 
+        aviso = QLabel("Use a segunda aba somente para inclusão por exceção.")
+        aviso.setStyleSheet("color: #64748b; font-size: 12px; font-weight: 600;")
+        layout.addWidget(aviso)
         layout.addWidget(self.tabs)
 
         # Botões Inferiores

@@ -9,3 +9,5 @@ class Aluno:
         self.licao_atual = licao_atual
         self.modulo_atual = modulo_atual
         self.observacoes = observacoes
+        self.turma_id = None
+        self.modulos_ids = []
