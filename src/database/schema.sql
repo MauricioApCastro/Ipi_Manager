@@ -8,7 +8,9 @@ CREATE TABLE IF NOT EXISTS alunos (
     whatsapp_resp TEXT,
     cpf TEXT,
     nascimento TEXT,
-    licao_atual INTEGER DEFAULT 1
+    licao_atual INTEGER DEFAULT 1,
+    modulo_atual TEXT DEFAULT 'Introdução',
+    observacoes TEXT 
 );
 
 CREATE TABLE IF NOT EXISTS cursos (

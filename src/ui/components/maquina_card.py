@@ -1,62 +1,87 @@
-from PyQt5.QtWidgets import QFrame, QVBoxLayout, QLabel, QPushButton
-from PyQt5.QtCore import Qt, pyqtSignal # Adicionamos pyqtSignal
+from PyQt5.QtWidgets import QFrame, QVBoxLayout, QLabel, QPushButton, QLineEdit
+from PyQt5.QtCore import pyqtSignal, Qt
 
 class MaquinaCard(QFrame):
-    # O Sinal que vai avisar a MainWindow
-    solicitar_alocacao = pyqtSignal(object) 
+    solicitar_alocacao = pyqtSignal(object)
 
-    def __init__(self, maquina_model, parent=None):
-        super().__init__(parent)
-        self.maquina = maquina_model
+    def __init__(self, maquina):
+        super().__init__()
+        self.maquina = maquina
         self.setup_ui()
-        
-        # Conecta o botão para emitir o sinal, não para abrir pop-up
-        self.btn_acao.clicked.connect(self.emitir_sinal)
 
     def setup_ui(self):
-        self.setFixedSize(220, 280)
-        self.setObjectName("CardMaquina")
-        self.setStyleSheet("#CardMaquina { background-color: white; border-radius: 15px; border: 2px solid #e2e8f0; }")
-        
-        layout = QVBoxLayout(self)
+        self.setFixedSize(220, 200)
+        self.setObjectName("MaquinaCard")
+        self.layout = QVBoxLayout(self)
+
+        # Tag da Máquina (ex: PC-01)
         self.lbl_tag = QLabel(self.maquina.tag)
-        self.lbl_tag.setStyleSheet("font-weight: bold; color: #64748b;")
-        layout.addWidget(self.lbl_tag)
-        
-        layout.addStretch()
-        self.lbl_status = QLabel("VAGO")
+        self.lbl_tag.setStyleSheet("font-weight: bold; font-size: 16px; color: #1e293b;")
+        self.layout.addWidget(self.lbl_tag)
+
+        # Status / Nome do Aluno
+        self.lbl_status = QLabel(self.maquina.status)
+        self.lbl_status.setWordWrap(True)
         self.lbl_status.setAlignment(Qt.AlignCenter)
-        self.lbl_status.setStyleSheet("font-size: 24px; font-weight: 900; color: #1e293b;")
-        layout.addWidget(self.lbl_status)
+        self.lbl_status.setStyleSheet("font-size: 14px; font-weight: bold; margin: 5px;")
+        self.layout.addWidget(self.lbl_status)
+
+        # Informações Acadêmicas (Módulo e Aula)
+        self.lbl_info_academica = QLabel("")
+        self.lbl_info_academica.setStyleSheet("color: #475569; font-size: 12px;")
+        self.lbl_info_academica.setAlignment(Qt.AlignCenter)
+        self.lbl_info_academica.hide() 
+        self.layout.addWidget(self.lbl_info_academica)
+
+        # Campo de Observações
+        self.txt_obs = QLineEdit()
+        self.txt_obs.setPlaceholderText("Obs...")
+        self.txt_obs.setStyleSheet("font-size: 11px; border: 1px solid #cbd5e1;")
+        self.txt_obs.hide()
+        self.layout.addWidget(self.txt_obs)
+
+        # Botão de Ação
+        self.btn_acao = QPushButton("Gerenciar")
+        self.btn_acao.clicked.connect(lambda: self.solicitar_alocacao.emit(self))
+        self.layout.addWidget(self.btn_acao)
+
+        self.atualizar_estilo()
+
+    def atualizar_status(self, novo_status, nome_aluno=None, info_aula=""):
+        """
+        Recebe o novo status, o nome e a string de Módulo/Aula.
+        Agora aceita os 3 argumentos que a MainWindow está enviando.
+        """
+        self.maquina.status = novo_status
+        self.maquina.ocupante = nome_aluno
         
-        layout.addStretch()
-        self.btn_acao = QPushButton("Alocar Aluno")
-        self.btn_acao.setCursor(Qt.PointingHandCursor)
-        self.btn_acao.setStyleSheet("""
-            QPushButton { background-color: #0f172a; color: white; border-radius: 8px; padding: 10px; font-weight: bold; }
-            QPushButton:hover { background-color: #334155; }
-        """)
-        layout.addWidget(self.btn_acao)
-
-    def emitir_sinal(self):
-        # Apenas avisa: "Ei, alguém clicou em mim!"
-        self.solicitar_alocacao.emit(self)
-
-    def atualizar_status(self, novo_status, aluno_nome=None):
         if novo_status == "OCUPADO":
-            nome_exibicao = aluno_nome.upper()
-            self.lbl_status.setText(nome_exibicao)
-            
-            # Reaplicando a lógica do Método 2: Fonte dinâmica para não cortar
-            tamanho_fonte = "14px" if len(nome_exibicao) > 12 else "20px"
-            
-            self.lbl_status.setStyleSheet(f"font-size: {tamanho_fonte}; font-weight: 900; color: #1e293b;")
-            self.setStyleSheet("#CardMaquina { background-color: #dcfce7; border: 2px solid #22c55e; }")
-            self.btn_acao.setText("Finalizar Aula")
-            
-        else: # Status VAGO
+            self.lbl_status.setText(nome_aluno)
+            self.lbl_info_academica.setText(info_aula)
+            self.lbl_info_academica.show()
+            self.txt_obs.show()
+        else:
             self.lbl_status.setText("VAGO")
-            # Resetamos para o tamanho padrão (20px) para o texto "VAGO" caber bem
-            self.lbl_status.setStyleSheet("font-size: 20px; font-weight: 900; color: #64748b;")
-            self.setStyleSheet("#CardMaquina { background-color: white; border: 2px solid #e2e8f0; }")
-            self.btn_acao.setText("Alocar Aluno")
+            self.lbl_info_academica.hide()
+            self.txt_obs.hide()
+            self.txt_obs.clear()
+
+        self.atualizar_estilo()
+
+    def atualizar_estilo(self):
+        if self.maquina.status == "OCUPADO":
+            self.setStyleSheet("""
+                #MaquinaCard { 
+                    background-color: #dcfce7; 
+                    border: 2px solid #22c55e; 
+                    border-radius: 10px; 
+                }
+            """)
+        else:
+            self.setStyleSheet("""
+                #MaquinaCard { 
+                    background-color: white; 
+                    border: 1px solid #cbd5e1; 
+                    border-radius: 10px; 
+                }
+            """)

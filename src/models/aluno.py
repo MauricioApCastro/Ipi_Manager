@@ -1,31 +1,11 @@
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Optional
-
-@dataclass
 class Aluno:
-    id: Optional[int] = None
-    nome: str = ""
-    whatsapp_aluno: str = ""
-    whatsapp_resp: str = ""
-    cpf: str = ""
-    nascimento: str = ""
-
-    def get_idade(self) -> int:
-        """Calcula a idade do aluno baseada na string de nascimento."""
-        if not self.nascimento:
-            return 0
-        try:
-            # Tenta converter a string para objeto de data
-            data_nascto = datetime.strptime(self.nascimento, "%d/%m/%Y")
-            hoje = datetime.now()
-            # Lógica matemática para idade
-            return hoje.year - data_nascto.year - (
-                (hoje.month, hoje.day) < (data_nascto.month, data_nascto.day)
-            )
-        except ValueError:
-            return 0
-
-    def e_menor_de_idade(self) -> bool:
-        """Útil para decidir se envia WhatsApp para o responsável ou para o aluno."""
-        return self.get_idade() < 18
+    def __init__(self, id, nome, whatsapp_aluno, whatsapp_resp, cpf, nascimento, licao_atual=1, modulo_atual='Introdução', observacoes=None):
+        self.id = id
+        self.nome = nome
+        self.whatsapp_aluno = whatsapp_aluno
+        self.whatsapp_resp = whatsapp_resp
+        self.cpf = cpf
+        self.nascimento = nascimento
+        self.licao_atual = licao_atual
+        self.modulo_atual = modulo_atual
+        self.observacoes = observacoes
