@@ -53,15 +53,21 @@ class MainWindow(QMainWindow):
         self.main_layout.addWidget(self.content_area)
 
     def carregar_maquinas(self):
+        """Busca as máquinas do banco e desenha os cards na tela."""
         maquinas = self.repo_maquina.get_all()
+        
+        # Limpa o grid atual para não duplicar cards
         for i in reversed(range(self.grid_maquinas.count())): 
             self.grid_maquinas.itemAt(i).widget().setParent(None)
 
         for index, maq in enumerate(maquinas):
             card = MaquinaCard(maq)
+            # Força o card a mostrar o nome se a máquina já estiver ocupada no banco
+            if maq.status == "OCUPADO" and maq.ocupante:
+                card.atualizar_status("OCUPADO", maq.ocupante)
+            
             card.solicitar_alocacao.connect(self.processar_alocacao)
             self.grid_maquinas.addWidget(card, index // 4, index % 4)
-
     def processar_alocacao(self, card_que_pediu):
         """Lógica Unificada: Entrada (Seletor) e Saída (Conclusão de Lição)."""
         status_texto = card_que_pediu.lbl_status.text().strip().upper()

@@ -92,10 +92,12 @@ class MaquinaRepository:
             print(f"{quantidade} máquinas semeadas no banco.")
 
     def salvar_alocacao(self, tag_maquina, nome_aluno):
+        """Atualiza o banco para OCUPADO e grava o nome do aluno."""
         query = "UPDATE maquinas SET status = 'OCUPADO', ocupante = ? WHERE tag = ?"
         with self.db.connection() as conn:
             conn.execute(query, (nome_aluno, tag_maquina))
-            conn.commit()
+            conn.commit() # ISSO AQUI É O QUE FAZ O SAVE DE VERDADE
+            print(f"Banco: {tag_maquina} agora ocupada por {nome_aluno}")
     
     def finalizar_alocacao(self, tag_maquina):
         query = "UPDATE maquinas SET status = 'VAGO', ocupante = NULL WHERE tag = ?"
