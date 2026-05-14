@@ -21,7 +21,7 @@ class MaquinaCard(QFrame):
         self.setup_ui()
 
     def setup_ui(self):
-        self.setMinimumSize(260, 300)
+        self.setMinimumSize(260, 330)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setObjectName("MaquinaCard")
 
@@ -61,15 +61,13 @@ class MaquinaCard(QFrame):
         self.lbl_status = QLabel(self.maquina.status)
         self.lbl_status.setWordWrap(True)
         self.lbl_status.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.lbl_status.setStyleSheet("""
-            font-size: 34px;
-            font-weight: 800;
-            color: #0f172a;
-            margin-top: 6px;
-        """)
+        self.lbl_status.setMinimumHeight(92)
+        self.lbl_status.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self._aplicar_estilo_status()
         self.layout.addWidget(self.lbl_status)
 
         self.lbl_info_academica = QLabel("")
+        self.lbl_info_academica.setWordWrap(True)
         self.lbl_info_academica.setStyleSheet("""
             color: #2563eb;
             font-size: 20px;
@@ -132,18 +130,41 @@ class MaquinaCard(QFrame):
 
         if novo_status == "OCUPADO":
             self.lbl_status.setText(nome_aluno)
+            self.lbl_status.setToolTip(nome_aluno or "")
             self.lbl_badge.setText("OCUPADA")
             self.lbl_info_academica.setText(info_aula)
             self.lbl_info_academica.show()
             self.txt_obs.show()
         else:
             self.lbl_status.setText("VAGO")
+            self.lbl_status.setToolTip("")
             self.lbl_badge.setText("LIVRE")
             self.lbl_info_academica.hide()
             self.txt_obs.hide()
             self.txt_obs.clear()
 
+        self._aplicar_estilo_status()
         self.atualizar_estilo()
+
+    def _aplicar_estilo_status(self):
+        texto = self.lbl_status.text() or ""
+        if self.maquina.status == "OCUPADO":
+            if len(texto) > 32:
+                fonte = 23
+            elif len(texto) > 24:
+                fonte = 26
+            else:
+                fonte = 30
+        else:
+            fonte = 34
+
+        self.lbl_status.setStyleSheet(f"""
+            font-size: {fonte}px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-top: 6px;
+            line-height: 1.05;
+        """)
 
     def atualizar_estilo(self):
         if self.maquina.status == "OCUPADO":
