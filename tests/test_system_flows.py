@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QApplication
 from src.database.db_handler import Database
 from src.database.repositories import (
     AlunoRepository,
+    CursoDuplicadoError,
     CursoRepository,
     FinanceiroRepository,
     MaquinaRepository,
@@ -73,6 +74,39 @@ class SistemaFluxosTest(unittest.TestCase):
         self.cursos.delete_modulo(modulo_id)
         self.assertEqual(self.cursos.get_aulas(curso_id), [])
         self.assertEqual(self.cursos.get_modulos(curso_id), [])
+
+    def test_nao_permite_cursos_com_mesmo_nome(self):
+        curso_id = self.cursos.add_curso("Curso Teste", 14, 135.0)
+        outro_id = self.cursos.add_curso("Curso Avancado", 14, 135.0)
+
+        with self.assertRaises(CursoDuplicadoError):
+            self.cursos.add_curso(" curso teste ", 12, 150.0)
+
+        with self.assertRaises(CursoDuplicadoError):
+            self.cursos.update_curso(outro_id, "CURSO TESTE", 10, 120.0)
+
+        self.cursos.update_curso(curso_id, "Curso Teste", 15, 140.0)
+        cursos = self.cursos.get_cursos()
+        self.assertEqual(len(cursos), 2)
+        self.assertEqual(next(curso for curso in cursos if curso[0] == curso_id)[2], 14)
+
+    def test_curso_sempre_tem_14_meses_e_modulos_podem_variar(self):
+        curso_id = self.cursos.add_curso("Curso Flexivel", 10, 135.0)
+        modulo_rapido_id = self.cursos.add_modulo(curso_id, "Modulo Rapido", 1, carga_meses=1)
+        modulo_lento_id = self.cursos.add_modulo(
+            curso_id,
+            "Modulo Lento",
+            2,
+            carga_meses=3,
+            permite_flexibilidade=True,
+        )
+
+        curso = next(curso for curso in self.cursos.get_cursos() if curso[0] == curso_id)
+        modulos = self.cursos.get_modulos(curso_id)
+
+        self.assertEqual(curso[2], 14)
+        self.assertEqual(next(modulo for modulo in modulos if modulo[0] == modulo_rapido_id)[4], 1)
+        self.assertEqual(next(modulo for modulo in modulos if modulo[0] == modulo_lento_id)[4], 3)
 
     def test_aluno_crud_modulos_turma_e_exclusao_libera_maquina(self):
         curso_id = self.cursos.add_curso("Curso Aluno", 14, 135.0)

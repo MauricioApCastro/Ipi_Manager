@@ -137,7 +137,7 @@ class TurmaWindow(QWidget):
             "1ª aula",
             "2ª aula",
             "Regra",
-            "Capacidade",
+            "Cap.",
             "Ocupadas",
             "Livres",
         ])
@@ -312,13 +312,18 @@ class TurmaWindow(QWidget):
         tabela.setSelectionBehavior(QTableWidget.SelectRows)
         tabela.setEditTriggers(QTableWidget.NoEditTriggers)
         tabela.verticalHeader().setVisible(False)
-        tabela.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        tabela.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        tabela.horizontalHeader().setStretchLastSection(False)
+        tabela.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        tabela.horizontalHeader().setMinimumSectionSize(72)
+        for coluna, largura in enumerate((180, 145, 145, 110, 90, 110, 90)):
+            tabela.setColumnWidth(coluna, largura)
         tabela.setStyleSheet("""
             QTableWidget {
                 border: none;
                 gridline-color: #e2e8f0;
                 color: #0f172a;
-                font-size: 20px;
+                font-size: 17px;
                 alternate-background-color: #f8fafc;
             }
 
@@ -326,8 +331,9 @@ class TurmaWindow(QWidget):
                 background-color: #f1f5f9;
                 color: #475569;
                 border: none;
-                padding: 8px;
+                padding: 8px 10px;
                 font-weight: 800;
+                font-size: 17px;
             }
         """)
 

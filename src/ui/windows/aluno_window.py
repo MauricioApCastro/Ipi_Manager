@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -19,7 +21,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
-from src.database.repositories import AlunoRepository, CursoRepository
+from src.database.repositories import AlunoRepository, CursoRepository, FinanceiroRepository
 from src.models.aluno import Aluno
 
 
@@ -28,6 +30,7 @@ class AlunoWindow(QWidget):
         super().__init__()
         self.repo = AlunoRepository(db)
         self.repo_curso = CursoRepository(db)
+        self.repo_financeiro = FinanceiroRepository(db)
         self.alunos = []
         self.modulo_checks = []
         self.aluno_em_edicao_id = None
@@ -80,7 +83,7 @@ class AlunoWindow(QWidget):
         layout.addWidget(body, 1)
 
     def _criar_painel_dados(self):
-        painel = self._painel_base("Dados do aluno")
+        painel = self._painel_base("Dados do aluno", "#2563eb", "#eff6ff")
         layout = painel.layout()
 
         self.txt_nome = self._line_edit("Nome completo")
@@ -102,15 +105,14 @@ class AlunoWindow(QWidget):
         self.txt_obs.setFixedHeight(58)
         self.txt_obs.setStyleSheet(self._text_edit_style())
 
-        botoes = QGridLayout()
-        botoes.setHorizontalSpacing(10)
-        botoes.setVerticalSpacing(10)
+        botoes = QHBoxLayout()
+        botoes.setSpacing(10)
 
-        self.btn_adicionar = QPushButton("Adicionar")
+        self.btn_adicionar = QPushButton("Matricular")
         self.btn_adicionar.clicked.connect(self.salvar_aluno)
         self.btn_adicionar.setStyleSheet(self._primary_button_style())
 
-        self.btn_atualizar = QPushButton("Atualizar")
+        self.btn_atualizar = QPushButton("Editar")
         self.btn_atualizar.clicked.connect(self.atualizar_aluno)
         self.btn_atualizar.setStyleSheet(self._secondary_button_style())
 
@@ -118,17 +120,13 @@ class AlunoWindow(QWidget):
         self.btn_excluir.clicked.connect(self.excluir_aluno)
         self.btn_excluir.setStyleSheet(self._danger_button_style())
 
-        self.btn_limpar = QPushButton("Limpar")
-        self.btn_limpar.clicked.connect(self.limpar_form)
-        self.btn_limpar.setStyleSheet(self._secondary_button_style())
-
-        for botao in (self.btn_adicionar, self.btn_atualizar, self.btn_excluir, self.btn_limpar):
+        for botao in (self.btn_adicionar, self.btn_atualizar, self.btn_excluir):
             botao.setMinimumHeight(38)
+            botao.setMinimumWidth(0)
 
-        botoes.addWidget(self.btn_adicionar, 0, 0)
-        botoes.addWidget(self.btn_atualizar, 0, 1)
-        botoes.addWidget(self.btn_excluir, 1, 0)
-        botoes.addWidget(self.btn_limpar, 1, 1)
+        botoes.addWidget(self.btn_adicionar, 1)
+        botoes.addWidget(self.btn_atualizar, 1)
+        botoes.addWidget(self.btn_excluir, 1)
 
         layout.addWidget(self.txt_nome)
         layout.addWidget(self.txt_cpf)
@@ -141,16 +139,11 @@ class AlunoWindow(QWidget):
         return painel
 
     def _criar_painel_academico(self):
-        painel = self._painel_base("Turma e módulos")
+        painel = self._painel_base("Turma e módulos", "#16a34a", "#f0fdf4")
         layout = painel.layout()
 
         self.combo_turma = QComboBox()
         self._preparar_campo(self.combo_turma)
-
-        self.spin_licao = QSpinBox()
-        self.spin_licao.setRange(1, 500)
-        self.spin_licao.setPrefix("Aula ")
-        self._preparar_campo(self.spin_licao)
 
         self.chk_todos_modulos = QCheckBox("Selecionar todos os módulos")
         self.chk_todos_modulos.stateChanged.connect(self.marcar_todos_modulos)
@@ -161,25 +154,25 @@ class AlunoWindow(QWidget):
         self.modulos_grid.setVerticalSpacing(6)
 
         layout.addWidget(self.combo_turma)
-        layout.addWidget(self.spin_licao)
         layout.addWidget(self.chk_todos_modulos)
         layout.addLayout(self.modulos_grid)
         layout.addStretch()
         return painel
 
     def _criar_painel_tabela(self):
-        painel = self._painel_base("Lista de alunos")
+        painel = self._painel_base("Lista de alunos", "#7c3aed", "#f5f3ff")
         layout = painel.layout()
 
-        self.tbl_alunos = QTableWidget(0, 8)
+        self.tbl_alunos = QTableWidget(0, 9)
         self.tbl_alunos.setHorizontalHeaderLabels([
             "Nome",
-            "CPF",
-            "Nascimento",
-            "WhatsApp",
-            "Responsável",
             "Turma",
-            "Módulos",
+            "Telefone",
+            "Status",
+            "CPF",
+            "Nasc.",
+            "Resp.",
+            "Módulo",
             "Aula",
         ])
         self.tbl_alunos.itemSelectionChanged.connect(self.carregar_aluno_selecionado)
@@ -241,20 +234,23 @@ class AlunoWindow(QWidget):
             self.modulos_grid.addWidget(chk, idx // 2, idx % 2)
 
     def preencher_tabela(self, alunos):
+        self.alunos_tabela = list(alunos)
         self.tbl_alunos.blockSignals(True)
         self.tbl_alunos.setRowCount(0)
 
-        for row, aluno in enumerate(alunos):
+        for row, aluno in enumerate(self.alunos_tabela):
             turma_txt = self._texto_turma(aluno.turma_id)
+            status = self._status_aluno(aluno)
             self.tbl_alunos.insertRow(row)
             self.tbl_alunos.setItem(row, 0, QTableWidgetItem(aluno.nome or ""))
-            self.tbl_alunos.setItem(row, 1, QTableWidgetItem(aluno.cpf or ""))
-            self.tbl_alunos.setItem(row, 2, QTableWidgetItem(aluno.nascimento or ""))
-            self.tbl_alunos.setItem(row, 3, QTableWidgetItem(aluno.whatsapp_aluno or ""))
-            self.tbl_alunos.setItem(row, 4, QTableWidgetItem(aluno.whatsapp_resp or ""))
-            self.tbl_alunos.setItem(row, 5, QTableWidgetItem(turma_txt))
-            self.tbl_alunos.setItem(row, 6, QTableWidgetItem(aluno.modulo_atual or ""))
-            self.tbl_alunos.setItem(row, 7, QTableWidgetItem(str(aluno.licao_atual or 1)))
+            self.tbl_alunos.setItem(row, 1, QTableWidgetItem(turma_txt))
+            self.tbl_alunos.setItem(row, 2, QTableWidgetItem(aluno.whatsapp_aluno or aluno.whatsapp_resp or ""))
+            self.tbl_alunos.setItem(row, 3, QTableWidgetItem(status))
+            self.tbl_alunos.setItem(row, 4, QTableWidgetItem(aluno.cpf or ""))
+            self.tbl_alunos.setItem(row, 5, QTableWidgetItem(aluno.nascimento or ""))
+            self.tbl_alunos.setItem(row, 6, QTableWidgetItem(aluno.whatsapp_resp or ""))
+            self.tbl_alunos.setItem(row, 7, QTableWidgetItem(aluno.modulo_atual or ""))
+            self.tbl_alunos.setItem(row, 8, QTableWidgetItem(str(aluno.licao_atual or 1)))
 
         self.tbl_alunos.blockSignals(False)
 
@@ -274,13 +270,10 @@ class AlunoWindow(QWidget):
 
     def carregar_aluno_selecionado(self):
         row = self.tbl_alunos.currentRow()
-        if row < 0:
+        if row < 0 or row >= len(getattr(self, "alunos_tabela", [])):
             return
 
-        nome = self.tbl_alunos.item(row, 0).text()
-        aluno = self.repo.get_by_name(nome)
-        if not aluno:
-            return
+        aluno = self.alunos_tabela[row]
 
         self.aluno_em_edicao_id = aluno.id
         self.txt_nome.setText(aluno.nome or "")
@@ -288,7 +281,6 @@ class AlunoWindow(QWidget):
         self.txt_nascimento.setText(aluno.nascimento or "")
         self.txt_whatsapp.setText(aluno.whatsapp_aluno or "")
         self.txt_whatsapp_resp.setText(aluno.whatsapp_resp or "")
-        self.spin_licao.setValue(aluno.licao_atual or 1)
         self.txt_obs.setPlainText(aluno.observacoes or "")
 
         index = self.combo_turma.findData(aluno.turma_id)
@@ -302,7 +294,26 @@ class AlunoWindow(QWidget):
         aluno = self._aluno_from_form()
         if not aluno:
             return
-        self.repo.add(aluno)
+
+        if self.aluno_em_edicao_id:
+            aluno.id = self.aluno_em_edicao_id
+            self.repo.update(aluno)
+        else:
+            existente = self._aluno_por_cpf(aluno.cpf)
+            if existente:
+                resposta = QMessageBox.question(
+                    self,
+                    "Aluno existente",
+                    f"Já existe um aluno com o CPF {aluno.cpf}. Deseja atualizar esse cadastro?",
+                    QMessageBox.Yes | QMessageBox.No,
+                )
+                if resposta != QMessageBox.Yes:
+                    return
+                aluno.id = existente.id
+                self.repo.update(aluno)
+                self.carregar_dados()
+                return
+            self.repo.add(aluno)
         self.carregar_dados()
 
     def atualizar_aluno(self):
@@ -342,7 +353,6 @@ class AlunoWindow(QWidget):
         self.txt_nascimento.clear()
         self.txt_whatsapp.clear()
         self.txt_whatsapp_resp.clear()
-        self.spin_licao.setValue(1)
         self.txt_obs.clear()
         self.combo_turma.setCurrentIndex(0)
         self.chk_todos_modulos.setChecked(False)
@@ -376,7 +386,7 @@ class AlunoWindow(QWidget):
             if chk.isChecked()
         ]
         if not modulos_ids:
-            QMessageBox.warning(self, "Módulos", "Selecione pelo menos um módulo.")
+            QMessageBox.warning(self, "Módulos", "Escolha pelo menos um módulo para matricular o aluno.")
             return None
 
         nomes_modulos = [
@@ -393,12 +403,20 @@ class AlunoWindow(QWidget):
             cpf,
             nascimento,
         )
-        aluno.licao_atual = self.spin_licao.value()
+        aluno.licao_atual = 1
         aluno.modulo_atual = ", ".join(nomes_modulos)
         aluno.modulos_ids = modulos_ids
         aluno.turma_id = self.combo_turma.currentData()
         aluno.observacoes = self.txt_obs.toPlainText().strip()
         return aluno
+
+    def _aluno_por_cpf(self, cpf):
+        cpf_limpo = "".join(char for char in (cpf or "") if char.isdigit())
+        for aluno in self.repo.get_all():
+            aluno_cpf = "".join(char for char in (aluno.cpf or "") if char.isdigit())
+            if aluno_cpf and aluno_cpf == cpf_limpo:
+                return aluno
+        return None
 
     def _cpf_valido(self, cpf):
         numeros = [int(char) for char in cpf if char.isdigit()]
@@ -423,6 +441,32 @@ class AlunoWindow(QWidget):
             return "-"
         return self.combo_turma.itemText(index).split(" (")[0]
 
+    def _status_aluno(self, aluno):
+        modulo = (aluno.modulo_atual or "").strip().lower()
+        if modulo == "curso concluído":
+            return "Formado"
+        if modulo == "trancado":
+            return "Trancado"
+        if self._aluno_inadimplente(aluno):
+            return "Pendente"
+        return "Matriculado"
+
+    def _aluno_inadimplente(self, aluno):
+        config = self.repo_financeiro.get_config(aluno.id)
+        data_inicio = config["data_primeiro_pagamento"]
+        if not data_inicio:
+            return False
+
+        try:
+            inicio = datetime.strptime(data_inicio, "%d/%m/%Y")
+        except ValueError:
+            return False
+
+        hoje = datetime.now()
+        parcela_atual = ((hoje.year - inicio.year) * 12) + (hoje.month - inicio.month) + 1
+        parcela_atual = max(1, min(parcela_atual, 14))
+        return (config["parcelas_pagas"] or 0) < parcela_atual
+
     def _limpar_layout(self, layout):
         while layout.count():
             item = layout.takeAt(0)
@@ -430,23 +474,38 @@ class AlunoWindow(QWidget):
             if widget:
                 widget.deleteLater()
 
-    def _painel_base(self, titulo):
+    def _painel_base(self, titulo, cor="#64748b", fundo_titulo="#f8fafc"):
         painel = QFrame()
+        painel.setObjectName("painelBase")
         painel.setMinimumWidth(240)
-        painel.setStyleSheet("""
-            QFrame {
+        painel.setStyleSheet(f"""
+            QFrame#painelBase {{
                 background-color: white;
-                border: 1px solid #e2e8f0;
-                border-radius: 16px;
-            }
+                border: 1px solid {cor};
+                border-radius: 14px;
+            }}
         """)
         layout = QVBoxLayout(painel)
         layout.setContentsMargins(16, 14, 16, 16)
         layout.setSpacing(9)
 
         label = QLabel(titulo)
-        label.setStyleSheet("color: #0f172a; font-size: 20px; font-weight: 900; border: none;")
+        label.setStyleSheet(f"""
+            color: {cor};
+            background-color: {fundo_titulo};
+            border: none;
+            border-left: 5px solid {cor};
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: 20px;
+            font-weight: 900;
+        """)
         layout.addWidget(label)
+
+        divisor = QFrame()
+        divisor.setFrameShape(QFrame.HLine)
+        divisor.setStyleSheet(f"border: none; border-top: 1px solid {cor};")
+        layout.addWidget(divisor)
         return painel
 
     def _line_edit(self, placeholder):
@@ -464,13 +523,19 @@ class AlunoWindow(QWidget):
         tabela.setSelectionBehavior(QTableWidget.SelectRows)
         tabela.setEditTriggers(QTableWidget.NoEditTriggers)
         tabela.verticalHeader().setVisible(False)
-        tabela.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        tabela.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        tabela.horizontalHeader().setStretchLastSection(False)
+        tabela.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        tabela.horizontalHeader().setMinimumSectionSize(72)
+        larguras = (210, 220, 145, 125, 130, 100, 145, 220, 80)
+        for coluna, largura in enumerate(larguras):
+            tabela.setColumnWidth(coluna, largura)
         tabela.setStyleSheet("""
             QTableWidget {
                 border: none;
                 gridline-color: #e2e8f0;
                 color: #0f172a;
-                font-size: 20px;
+                font-size: 17px;
                 alternate-background-color: #f8fafc;
             }
 
@@ -478,8 +543,9 @@ class AlunoWindow(QWidget):
                 background-color: #f1f5f9;
                 color: #475569;
                 border: none;
-                padding: 8px;
+                padding: 8px 10px;
                 font-weight: 800;
+                font-size: 17px;
             }
         """)
 

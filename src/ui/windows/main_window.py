@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtGui import QCursor, QDesktopServices
 
-from src.database.repositories import MaquinaRepository, AlunoRepository
+from src.database.repositories import MaquinaRepository, AlunoRepository, CursoRepository
 from src.ui.components.maquina_card import MaquinaCard
 from src.ui.components.seletor_aluno import SeletorAlunoDialog
 from src.ui.windows.aluno_window import AlunoWindow
@@ -33,6 +33,7 @@ class MainWindow(QMainWindow):
         self.db = db
         self.repo_maquina = MaquinaRepository(self.db)
         self.repo_aluno = AlunoRepository(self.db)
+        self.repo_curso = CursoRepository(self.db)
         self.menu_buttons = {}
         self.maquina_cards = []
         self.setWindowTitle("IPI PRO - Gestão de Sala")
@@ -271,28 +272,6 @@ class MainWindow(QMainWindow):
         header.addLayout(title_box)
         header.addStretch()
 
-        self.btn_atualizar = QPushButton("Atualizar")
-        self.btn_atualizar.setCursor(Qt.PointingHandCursor)
-        self.btn_atualizar.clicked.connect(self.carregar_maquinas)
-        self.btn_atualizar.setStyleSheet("""
-            QPushButton {
-                background-color: white;
-                color: #0f172a;
-                border: 1px solid #dbe3ef;
-                border-radius: 14px;
-                padding: 10px 16px;
-                font-size: 16px;
-                font-weight: 800;
-            }
-
-            QPushButton:hover {
-                background-color: #f8fafc;
-                border-color: #bfdbfe;
-                color: #1d4ed8;
-            }
-        """)
-        header.addWidget(self.btn_atualizar)
-
         self.content_layout.addLayout(header)
 
     def _criar_grid_maquinas(self):
@@ -355,7 +334,7 @@ class MainWindow(QMainWindow):
                 if maq.ocupante:
                     aluno = self.repo_aluno.get_by_name(maq.ocupante)
                     if aluno:
-                        info = f"{aluno.modulo_atual} - Aula {aluno.licao_atual}"
+                        info = self._texto_aula_card(aluno)
                         card.atualizar_status("OCUPADO", maq.ocupante, info)
                         card.txt_obs.setText(aluno.observacoes or "")
                         self._conectar_salvar_obs(card)
@@ -436,8 +415,12 @@ class MainWindow(QMainWindow):
             if resposta == QMessageBox.Yes:
                 aluno_obj = self.repo_aluno.get_by_name(card_que_pediu.maquina.ocupante)
                 if aluno_obj:
-                    nova_licao = (aluno_obj.licao_atual or 1) + 1
-                    self.repo_aluno.atualizar_progresso(aluno_obj.id, nova_licao)
+                    nova_licao, novo_modulo, curso_concluido = self._proximo_passo_aluno(aluno_obj)
+                    if curso_concluido:
+                        self.repo_aluno.concluir_curso(aluno_obj.id)
+                        QMessageBox.information(self, "Curso", f"{aluno_obj.nome} concluiu o curso.")
+                    else:
+                        self.repo_aluno.atualizar_progresso(aluno_obj.id, nova_licao, novo_modulo)
 
             self.repo_maquina.finalizar_alocacao(card_que_pediu.maquina.tag)
             card_que_pediu.atualizar_status("VAGO")
@@ -445,7 +428,11 @@ class MainWindow(QMainWindow):
             return
 
         alunos_horario = self.repo_aluno.get_alunos_do_horario_atual()
-        todos_alunos = self.repo_aluno.get_all()
+        alunos_horario = [aluno for aluno in alunos_horario if not self._curso_concluido(aluno)]
+        todos_alunos = [
+            aluno for aluno in self.repo_aluno.get_all()
+            if not self._curso_concluido(aluno)
+        ]
         seletor = SeletorAlunoDialog(
             alunos_horario,
             todos_alunos,
@@ -458,6 +445,14 @@ class MainWindow(QMainWindow):
             aluno = self.repo_aluno.get_by_name(nome_sel)
 
             if aluno:
+                if self._curso_concluido(aluno):
+                    QMessageBox.warning(
+                        self,
+                        "Curso concluído",
+                        f"{aluno.nome} já concluiu o curso e não pode ocupar uma máquina.",
+                    )
+                    return
+
                 for i in range(self.grid_maquinas.count()):
                     w = self.grid_maquinas.itemAt(i).widget()
                     if isinstance(w, MaquinaCard) and w.maquina.ocupante == nome_sel:
@@ -466,7 +461,7 @@ class MainWindow(QMainWindow):
 
                 self.repo_maquina.salvar_alocacao(card_que_pediu.maquina.tag, nome_sel)
                 self._registrar_presenca_e_notificar(aluno, card_que_pediu.maquina.tag)
-                info_aula = f"{aluno.modulo_atual} - Aula {aluno.licao_atual}"
+                info_aula = self._texto_aula_card(aluno)
                 card_que_pediu.atualizar_status("OCUPADO", nome_sel, info_aula)
                 card_que_pediu.txt_obs.setText(aluno.observacoes or "")
                 self._conectar_salvar_obs(card_que_pediu)
@@ -495,6 +490,73 @@ class MainWindow(QMainWindow):
         self.repo_aluno.registrar_mensagem_responsavel(aluno.id, telefone, mensagem)
         url = f"https://wa.me/55{telefone}?text={quote(mensagem)}"
         QDesktopServices.openUrl(QUrl(url))
+
+    def _texto_aula_card(self, aluno):
+        if self._curso_concluido(aluno):
+            return "Curso concluído"
+
+        modulo = (aluno.modulo_atual or "").split(",")[0].strip() or "Módulo"
+        licao = self._licao_visivel(aluno, modulo)
+        abreviacoes = {
+            "windows": "Win",
+            "word": "Word",
+            "excel": "Excel",
+            "powerpoint": "Ppt",
+            "internet": "Net",
+        }
+        chave = modulo.lower()
+        aula_nome = abreviacoes.get(chave, modulo[:3].title())
+        return f"{modulo}, Aula {aula_nome} {licao}"
+
+    def _curso_concluido(self, aluno):
+        return (aluno.modulo_atual or "").strip().lower() == "curso concluído"
+
+    def _proximo_passo_aluno(self, aluno):
+        modulo_atual = (aluno.modulo_atual or "").split(",")[0].strip()
+        modulos_ids = aluno.modulos_ids or []
+
+        if not modulo_atual or not modulos_ids:
+            return aluno.licao_atual or 1, None, True
+
+        modulos = self._modulos_do_aluno_ordenados(modulos_ids)
+
+        indice_atual = next(
+            (idx for idx, modulo in enumerate(modulos) if modulo[2] == modulo_atual),
+            -1,
+        )
+        if indice_atual < 0:
+            return aluno.licao_atual or 1, None, True
+
+        modulo_id = modulos[indice_atual][0]
+        total_aulas = len(self.repo_curso.get_aulas_modulo(modulo_id))
+        licao_atual = aluno.licao_atual or 1
+
+        if total_aulas and licao_atual < total_aulas:
+            return licao_atual + 1, modulo_atual, False
+
+        for proximo_modulo in modulos[indice_atual + 1:]:
+            if self.repo_curso.get_aulas_modulo(proximo_modulo[0]):
+                return 1, proximo_modulo[2], False
+
+        return licao_atual, modulo_atual, True
+
+    def _modulos_do_aluno_ordenados(self, modulos_ids):
+        modulos = [
+            modulo for modulo in self.repo_curso.get_all_modulos()
+            if modulo[0] in modulos_ids
+        ]
+        modulos.sort(key=lambda modulo: (modulo[3] or 0, modulo[0]))
+        return modulos
+
+    def _licao_visivel(self, aluno, modulo_nome):
+        licao = aluno.licao_atual or 1
+        for modulo in self._modulos_do_aluno_ordenados(aluno.modulos_ids or []):
+            if modulo[2] != modulo_nome:
+                continue
+            total_aulas = len(self.repo_curso.get_aulas_modulo(modulo[0]))
+            if total_aulas:
+                return min(licao, total_aulas)
+        return licao
 
     def _aluno_menor_de_idade(self, aluno):
         if not aluno.nascimento:

@@ -118,7 +118,7 @@ class MaquinaCard(QFrame):
         self.lbl_status.setMinimumHeight(34 if compacto else 72)
         self.lbl_info_academica.setMinimumHeight(58 if compacto else 58)
         self.lbl_info_academica.setMaximumHeight(66 if compacto else 92)
-        self.txt_obs.setMinimumHeight(34 if compacto else 44)
+        self.txt_obs.setMinimumHeight(38 if compacto else 44)
         self.btn_acao.setMinimumHeight(38 if compacto else 52)
         self._aplicar_estilo_tag()
         self._aplicar_estilo_status()
@@ -130,6 +130,7 @@ class MaquinaCard(QFrame):
     def _aplicar_estilo_status(self):
         texto = self.lbl_status.text() or ""
         if self.maquina.status == "OCUPADO":
+            cor = "#0f172a"
             if len(texto) > 32:
                 fonte = 18 if self.compacto else 23
             elif len(texto) > 24:
@@ -137,12 +138,13 @@ class MaquinaCard(QFrame):
             else:
                 fonte = 23 if self.compacto else 30
         else:
+            cor = "#0f172a"
             fonte = 28 if self.compacto else 34
 
         self.lbl_status.setStyleSheet(f"""
             font-size: {fonte}px;
             font-weight: 800;
-            color: #0f172a;
+            color: {cor};
             margin-top: 6px;
             line-height: 1.05;
         """)
@@ -150,9 +152,11 @@ class MaquinaCard(QFrame):
     def _aplicar_estilo_tag(self):
         fonte = 16 if self.compacto else 20
         padding = "5px 10px" if self.compacto else "8px 14px"
+        fundo = "#fef2f2" if self.maquina.status == "OCUPADO" else "#f8fafc"
+        cor = "#b91c1c" if self.maquina.status == "OCUPADO" else "#15803d"
         self.lbl_tag.setStyleSheet(f"""
-            background-color: #eff6ff;
-            color: #2563eb;
+            background-color: {fundo};
+            color: {cor};
             padding: {padding};
             border-radius: 12px;
             font-size: {fonte}px;
@@ -163,17 +167,17 @@ class MaquinaCard(QFrame):
         fonte = 14 if self.compacto else 20
         padding = "5px 8px" if self.compacto else "10px 12px"
         self.lbl_info_academica.setStyleSheet(f"""
-            color: #2563eb;
+            color: #b91c1c;
             font-size: {fonte}px;
             font-weight: 700;
-            background: #eff6ff;
+            background: #fef2f2;
             border-radius: 10px;
             padding: {padding};
         """)
 
     def _aplicar_estilo_observacao(self):
-        fonte = 15 if self.compacto else 20
-        padding = "6px 9px" if self.compacto else "12px 14px"
+        fonte = 14 if self.compacto else 16
+        padding = "5px 8px" if self.compacto else "8px 10px"
         self.txt_obs.setStyleSheet(f"""
             QLineEdit {{
                 font-size: {fonte}px;
@@ -193,9 +197,11 @@ class MaquinaCard(QFrame):
     def _aplicar_estilo_botao(self):
         fonte = 16 if self.compacto else 20
         padding = "8px" if self.compacto else "16px"
+        fundo = "#dc2626" if self.maquina.status == "OCUPADO" else "#2563eb"
+        hover = "#b91c1c" if self.maquina.status == "OCUPADO" else "#1d4ed8"
         self.btn_acao.setStyleSheet(f"""
             QPushButton {{
-                background-color: #2563eb;
+                background-color: {fundo};
                 color: white;
                 border: none;
                 border-radius: 14px;
@@ -205,22 +211,24 @@ class MaquinaCard(QFrame):
             }}
 
             QPushButton:hover {{
-                background-color: #1d4ed8;
+                background-color: {hover};
             }}
         """)
 
     def atualizar_estilo(self):
         if self.maquina.status == "OCUPADO":
+            self.shadow.setColor(QColor(220, 38, 38, 28))
             self.setStyleSheet("""
                 #MaquinaCard {
                     background-color: white;
-                    border: 1px solid #bfdbfe;
+                    border: 1px solid #fecaca;
+                    border-left: 6px solid #ef4444;
                     border-radius: 20px;
                 }
             """)
             self.lbl_badge.setStyleSheet("""
-                background-color: #dbeafe;
-                color: #1d4ed8;
+                background-color: #fee2e2;
+                color: #b91c1c;
                 padding: %s;
                 border-radius: 12px;
                 font-size: %dpx;
@@ -228,19 +236,23 @@ class MaquinaCard(QFrame):
             """ % ("5px 9px" if self.compacto else "6px 10px", 16 if self.compacto else 20))
             self.btn_acao.setText("Desocupar")
         else:
+            self.shadow.setColor(QColor(15, 23, 42, 20))
             self.setStyleSheet("""
                 #MaquinaCard {
-                    background-color: white;
-                    border: 1px solid #e2e8f0;
+                    background-color: #fbfefc;
+                    border: 1px solid #d1fae5;
+                    border-left: 6px solid #86efac;
                     border-radius: 20px;
                 }
             """)
             self.lbl_badge.setStyleSheet("""
                 background-color: #dcfce7;
-                color: #15803d;
+                color: #047857;
                 padding: %s;
                 border-radius: 12px;
                 font-size: %dpx;
                 font-weight: 800;
             """ % ("5px 9px" if self.compacto else "6px 10px", 16 if self.compacto else 20))
             self.btn_acao.setText("Ocupar")
+
+        self._aplicar_estilo_botao()
