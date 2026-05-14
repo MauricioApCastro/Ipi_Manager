@@ -36,18 +36,18 @@ class CursoWindow(QWidget):
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 18, 24, 18)
-        layout.setSpacing(10)
+        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setSpacing(6)
 
         header = QHBoxLayout()
         title_box = QVBoxLayout()
         title_box.setSpacing(2)
 
         titulo = QLabel("Cursos")
-        titulo.setStyleSheet("color: #0f172a; font-size: 36px; font-weight: 900;")
+        titulo.setStyleSheet("color: #0f172a; font-size: 30px; font-weight: 900;")
         subtitulo = QLabel("Cronograma principal de 14 meses, com módulos flexíveis para exceções.")
         subtitulo.setWordWrap(True)
-        subtitulo.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
+        subtitulo.setStyleSheet("color: #64748b; font-size: 17px; font-weight: 600;")
 
         title_box.addWidget(titulo)
         title_box.addWidget(subtitulo)
@@ -56,7 +56,7 @@ class CursoWindow(QWidget):
 
         self.combo_cursos = QComboBox()
         self.combo_cursos.setMinimumWidth(180)
-        self.combo_cursos.setMinimumHeight(38)
+        self.combo_cursos.setMinimumHeight(30)
         self.combo_cursos.currentIndexChanged.connect(self.trocar_curso)
         self.combo_cursos.setStyleSheet(self._input_style())
         header.addWidget(self.combo_cursos)
@@ -68,7 +68,7 @@ class CursoWindow(QWidget):
         forms_widget = QWidget()
         forms = QVBoxLayout(forms_widget)
         forms.setContentsMargins(0, 0, 0, 0)
-        forms.setSpacing(8)
+        forms.setSpacing(6)
         forms.addWidget(self._criar_painel_curso())
         forms.addWidget(self._criar_painel_modulo())
         forms.addWidget(self._criar_painel_aula())
@@ -76,7 +76,7 @@ class CursoWindow(QWidget):
         tabelas_widget = QWidget()
         tabelas = QVBoxLayout(tabelas_widget)
         tabelas.setContentsMargins(0, 0, 0, 0)
-        tabelas.setSpacing(8)
+        tabelas.setSpacing(6)
         tabelas.addWidget(self._criar_tabela_modulos(), 1)
         tabelas.addWidget(self._criar_tabela_aulas(), 1)
 
@@ -164,13 +164,10 @@ class CursoWindow(QWidget):
         self._preparar_campo(self.combo_pre_requisito)
 
         self.check_flexivel = QCheckBox("Permitir troca de ordem em exceções")
-        self.check_flexivel.setStyleSheet("color: #334155; font-size: 20px; font-weight: 700;")
+        self.check_flexivel.setStyleSheet("color: #334155; font-size: 16px; font-weight: 700;")
 
-        botoes = QGridLayout()
-        botoes.setHorizontalSpacing(10)
-        botoes.setVerticalSpacing(10)
-        botoes.setRowMinimumHeight(0, 38)
-        botoes.setRowMinimumHeight(1, 38)
+        botoes = QHBoxLayout()
+        botoes.setSpacing(8)
         self.btn_add_modulo = QPushButton("Adicionar")
         self._preparar_botao(self.btn_add_modulo)
         self.btn_add_modulo.clicked.connect(self.salvar_modulo)
@@ -197,12 +194,12 @@ class CursoWindow(QWidget):
             self.btn_excluir_modulo,
             self.btn_limpar_modulo,
         ):
-            botao.setMinimumWidth(110)
+            botao.setMinimumWidth(0)
 
-        botoes.addWidget(self.btn_add_modulo, 0, 0)
-        botoes.addWidget(self.btn_update_modulo, 0, 1)
-        botoes.addWidget(self.btn_excluir_modulo, 1, 0)
-        botoes.addWidget(self.btn_limpar_modulo, 1, 1)
+        botoes.addWidget(self.btn_add_modulo)
+        botoes.addWidget(self.btn_update_modulo)
+        botoes.addWidget(self.btn_excluir_modulo)
+        botoes.addWidget(self.btn_limpar_modulo)
 
         layout.addWidget(self.txt_modulo)
         layout.addLayout(linha)
@@ -504,11 +501,11 @@ class CursoWindow(QWidget):
             }
         """)
         layout = QVBoxLayout(painel)
-        layout.setContentsMargins(14, 10, 14, 12)
-        layout.setSpacing(7)
+        layout.setContentsMargins(14, 8, 14, 10)
+        layout.setSpacing(5)
 
         label = QLabel(titulo)
-        label.setStyleSheet("color: #0f172a; font-size: 20px; font-weight: 900; border: none;")
+        label.setStyleSheet("color: #0f172a; font-size: 18px; font-weight: 900; border: none;")
         layout.addWidget(label)
         return painel
 
@@ -519,11 +516,11 @@ class CursoWindow(QWidget):
         return edit
 
     def _preparar_campo(self, campo):
-        campo.setMinimumHeight(34)
+        campo.setMinimumHeight(30)
         campo.setStyleSheet(self._input_style())
 
     def _preparar_botao(self, botao):
-        botao.setMinimumHeight(38)
+        botao.setMinimumHeight(32)
 
     def _preparar_tabela(self, tabela):
         tabela.setAlternatingRowColors(True)
@@ -556,8 +553,8 @@ class CursoWindow(QWidget):
                 color: #0f172a;
                 border: 1px solid #dbe3ef;
                 border-radius: 10px;
-                padding: 7px 10px;
-                font-size: 20px;
+                padding: 5px 10px;
+                font-size: 17px;
                 font-weight: 600;
             }
 
@@ -574,8 +571,8 @@ class CursoWindow(QWidget):
                 color: white;
                 border: none;
                 border-radius: 11px;
-                padding: 10px 12px;
-                font-size: 20px;
+                padding: 7px 10px;
+                font-size: 17px;
                 font-weight: 800;
             }
 
@@ -591,8 +588,8 @@ class CursoWindow(QWidget):
                 color: #0f172a;
                 border: 1px solid #dbe3ef;
                 border-radius: 11px;
-                padding: 10px 12px;
-                font-size: 20px;
+                padding: 7px 10px;
+                font-size: 17px;
                 font-weight: 800;
             }
 
@@ -609,8 +606,8 @@ class CursoWindow(QWidget):
                 color: #be123c;
                 border: 1px solid #fecdd3;
                 border-radius: 11px;
-                padding: 10px 12px;
-                font-size: 20px;
+                padding: 7px 10px;
+                font-size: 17px;
                 font-weight: 800;
             }
 

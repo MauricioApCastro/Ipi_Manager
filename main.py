@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
 from src.database.db_handler import Database
-from src.database.repositories import MaquinaRepository, AlunoRepository
+from src.database.repositories import MaquinaRepository
 from src.ui.windows.main_window import MainWindow
 
 
@@ -24,9 +24,6 @@ def inicializar_sistema():
 
         repo_maq = MaquinaRepository(db)
         repo_maq.seed_maquinas(8)
-
-        repo_aluno = AlunoRepository(db)
-        repo_aluno.seed_alunos_teste()
 
         return db
     except Exception as e:

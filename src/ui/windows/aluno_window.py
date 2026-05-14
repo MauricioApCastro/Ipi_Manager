@@ -28,7 +28,6 @@ class AlunoWindow(QWidget):
         super().__init__()
         self.repo = AlunoRepository(db)
         self.repo_curso = CursoRepository(db)
-        self.repo.seed_turmas_padrao()
         self.alunos = []
         self.modulo_checks = []
         self.aluno_em_edicao_id = None

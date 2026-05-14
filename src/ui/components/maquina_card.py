@@ -42,14 +42,7 @@ class MaquinaCard(QFrame):
 
         self.lbl_tag = QLabel(self.maquina.tag)
         self.lbl_tag.setAlignment(Qt.AlignCenter)
-        self.lbl_tag.setStyleSheet("""
-            background-color: #eff6ff;
-            color: #2563eb;
-            padding: 8px 14px;
-            border-radius: 12px;
-            font-size: 20px;
-            font-weight: 800;
-        """)
+        self._aplicar_estilo_tag()
 
         self.lbl_badge = QLabel("LIVRE")
         self.lbl_badge.setAlignment(Qt.AlignCenter)
@@ -69,6 +62,8 @@ class MaquinaCard(QFrame):
 
         self.lbl_info_academica = QLabel("")
         self.lbl_info_academica.setWordWrap(True)
+        self.lbl_info_academica.setMinimumHeight(58)
+        self.lbl_info_academica.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self._aplicar_estilo_info_academica()
         self.lbl_info_academica.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.lbl_info_academica.hide()
@@ -76,6 +71,7 @@ class MaquinaCard(QFrame):
 
         self.txt_obs = QLineEdit()
         self.txt_obs.setPlaceholderText("Anotacoes da aula...")
+        self.txt_obs.setMinimumHeight(38)
         self._aplicar_estilo_observacao()
         self.txt_obs.hide()
         self.layout.addWidget(self.txt_obs)
@@ -116,10 +112,15 @@ class MaquinaCard(QFrame):
         self.compacto = compacto
         self.setMinimumHeight(max(180, altura))
         self.setMaximumHeight(max(180, altura))
-        margens = (12, 10, 12, 10) if compacto else (16, 14, 16, 14)
+        margens = (10, 8, 10, 8) if compacto else (16, 14, 16, 14)
         self.layout.setContentsMargins(*margens)
-        self.layout.setSpacing(7 if compacto else 9)
-        self.lbl_status.setMinimumHeight(52 if compacto else 72)
+        self.layout.setSpacing(5 if compacto else 9)
+        self.lbl_status.setMinimumHeight(34 if compacto else 72)
+        self.lbl_info_academica.setMinimumHeight(58 if compacto else 58)
+        self.lbl_info_academica.setMaximumHeight(66 if compacto else 92)
+        self.txt_obs.setMinimumHeight(34 if compacto else 44)
+        self.btn_acao.setMinimumHeight(38 if compacto else 52)
+        self._aplicar_estilo_tag()
         self._aplicar_estilo_status()
         self._aplicar_estilo_info_academica()
         self._aplicar_estilo_observacao()
@@ -130,11 +131,11 @@ class MaquinaCard(QFrame):
         texto = self.lbl_status.text() or ""
         if self.maquina.status == "OCUPADO":
             if len(texto) > 32:
-                fonte = 20 if self.compacto else 23
+                fonte = 18 if self.compacto else 23
             elif len(texto) > 24:
-                fonte = 22 if self.compacto else 26
+                fonte = 20 if self.compacto else 26
             else:
-                fonte = 25 if self.compacto else 30
+                fonte = 23 if self.compacto else 30
         else:
             fonte = 28 if self.compacto else 34
 
@@ -146,9 +147,21 @@ class MaquinaCard(QFrame):
             line-height: 1.05;
         """)
 
-    def _aplicar_estilo_info_academica(self):
+    def _aplicar_estilo_tag(self):
         fonte = 16 if self.compacto else 20
-        padding = "7px 9px" if self.compacto else "10px 12px"
+        padding = "5px 10px" if self.compacto else "8px 14px"
+        self.lbl_tag.setStyleSheet(f"""
+            background-color: #eff6ff;
+            color: #2563eb;
+            padding: {padding};
+            border-radius: 12px;
+            font-size: {fonte}px;
+            font-weight: 800;
+        """)
+
+    def _aplicar_estilo_info_academica(self):
+        fonte = 14 if self.compacto else 20
+        padding = "5px 8px" if self.compacto else "10px 12px"
         self.lbl_info_academica.setStyleSheet(f"""
             color: #2563eb;
             font-size: {fonte}px;
@@ -159,8 +172,8 @@ class MaquinaCard(QFrame):
         """)
 
     def _aplicar_estilo_observacao(self):
-        fonte = 16 if self.compacto else 20
-        padding = "8px 10px" if self.compacto else "12px 14px"
+        fonte = 15 if self.compacto else 20
+        padding = "6px 9px" if self.compacto else "12px 14px"
         self.txt_obs.setStyleSheet(f"""
             QLineEdit {{
                 font-size: {fonte}px;
@@ -179,7 +192,7 @@ class MaquinaCard(QFrame):
 
     def _aplicar_estilo_botao(self):
         fonte = 16 if self.compacto else 20
-        padding = "10px" if self.compacto else "16px"
+        padding = "8px" if self.compacto else "16px"
         self.btn_acao.setStyleSheet(f"""
             QPushButton {{
                 background-color: #2563eb;
@@ -208,11 +221,11 @@ class MaquinaCard(QFrame):
             self.lbl_badge.setStyleSheet("""
                 background-color: #dbeafe;
                 color: #1d4ed8;
-                padding: 6px 10px;
+                padding: %s;
                 border-radius: 12px;
                 font-size: %dpx;
                 font-weight: 800;
-            """ % (16 if self.compacto else 20))
+            """ % ("5px 9px" if self.compacto else "6px 10px", 16 if self.compacto else 20))
             self.btn_acao.setText("Desocupar")
         else:
             self.setStyleSheet("""
@@ -225,9 +238,9 @@ class MaquinaCard(QFrame):
             self.lbl_badge.setStyleSheet("""
                 background-color: #dcfce7;
                 color: #15803d;
-                padding: 6px 10px;
+                padding: %s;
                 border-radius: 12px;
                 font-size: %dpx;
                 font-weight: 800;
-            """ % (16 if self.compacto else 20))
+            """ % ("5px 9px" if self.compacto else "6px 10px", 16 if self.compacto else 20))
             self.btn_acao.setText("Ocupar")
