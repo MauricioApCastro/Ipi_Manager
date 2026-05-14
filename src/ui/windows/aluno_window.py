@@ -62,9 +62,14 @@ class AlunoWindow(QWidget):
 
         body = QHBoxLayout()
         body.setSpacing(14)
+
+        coluna_alunos = QVBoxLayout()
+        coluna_alunos.setSpacing(14)
+        coluna_alunos.addWidget(self._criar_painel_academico(), 3)
+        coluna_alunos.addWidget(self._criar_painel_tabela(), 5)
+
         body.addWidget(self._criar_painel_dados(), 4)
-        body.addWidget(self._criar_painel_academico(), 4)
-        body.addWidget(self._criar_painel_tabela(), 7)
+        body.addLayout(coluna_alunos, 7)
         layout.addLayout(body, 1)
 
     def _criar_painel_dados(self):

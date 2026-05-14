@@ -104,7 +104,7 @@ class MaquinaCard(QFrame):
 
         self.layout.addStretch()
 
-        self.btn_acao = QPushButton("Alocar aluno")
+        self.btn_acao = QPushButton("Ocupar")
         self.btn_acao.setCursor(Qt.PointingHandCursor)
         self.btn_acao.setStyleSheet("""
             QPushButton {
@@ -162,7 +162,7 @@ class MaquinaCard(QFrame):
                 font-size: 20px;
                 font-weight: 800;
             """)
-            self.btn_acao.setText("Liberar / editar")
+            self.btn_acao.setText("Desocupar")
         else:
             self.setStyleSheet("""
                 #MaquinaCard {
@@ -179,4 +179,4 @@ class MaquinaCard(QFrame):
                 font-size: 20px;
                 font-weight: 800;
             """)
-            self.btn_acao.setText("Alocar aluno")
+            self.btn_acao.setText("Ocupar")
