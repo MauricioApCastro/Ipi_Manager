@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QHeaderView,
     QMessageBox,
+    QSplitter,
 )
 from PyQt5.QtCore import Qt
 
@@ -45,6 +46,7 @@ class CursoWindow(QWidget):
         titulo = QLabel("Cursos")
         titulo.setStyleSheet("color: #0f172a; font-size: 36px; font-weight: 900;")
         subtitulo = QLabel("Cronograma principal de 14 meses, com módulos flexíveis para exceções.")
+        subtitulo.setWordWrap(True)
         subtitulo.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
 
         title_box.addWidget(titulo)
@@ -53,30 +55,37 @@ class CursoWindow(QWidget):
         header.addStretch()
 
         self.combo_cursos = QComboBox()
-        self.combo_cursos.setMinimumWidth(300)
+        self.combo_cursos.setMinimumWidth(180)
         self.combo_cursos.setMinimumHeight(38)
         self.combo_cursos.currentIndexChanged.connect(self.trocar_curso)
         self.combo_cursos.setStyleSheet(self._input_style())
         header.addWidget(self.combo_cursos)
         layout.addLayout(header)
 
-        body = QHBoxLayout()
-        body.setSpacing(14)
+        body = QSplitter(Qt.Horizontal)
+        body.setChildrenCollapsible(False)
 
-        forms = QVBoxLayout()
+        forms_widget = QWidget()
+        forms = QVBoxLayout(forms_widget)
+        forms.setContentsMargins(0, 0, 0, 0)
         forms.setSpacing(8)
         forms.addWidget(self._criar_painel_curso())
         forms.addWidget(self._criar_painel_modulo())
         forms.addWidget(self._criar_painel_aula())
 
-        tabelas = QVBoxLayout()
+        tabelas_widget = QWidget()
+        tabelas = QVBoxLayout(tabelas_widget)
+        tabelas.setContentsMargins(0, 0, 0, 0)
         tabelas.setSpacing(8)
         tabelas.addWidget(self._criar_tabela_modulos(), 1)
         tabelas.addWidget(self._criar_tabela_aulas(), 1)
 
-        body.addLayout(forms, 5)
-        body.addLayout(tabelas, 7)
-        layout.addLayout(body, 1)
+        body.addWidget(forms_widget)
+        body.addWidget(tabelas_widget)
+        body.setStretchFactor(0, 5)
+        body.setStretchFactor(1, 7)
+        body.setSizes([460, 700])
+        layout.addWidget(body, 1)
 
     def _criar_painel_curso(self):
         painel = self._painel_base("Curso")
@@ -188,7 +197,7 @@ class CursoWindow(QWidget):
             self.btn_excluir_modulo,
             self.btn_limpar_modulo,
         ):
-            botao.setMinimumWidth(130)
+            botao.setMinimumWidth(110)
 
         botoes.addWidget(self.btn_add_modulo, 0, 0)
         botoes.addWidget(self.btn_update_modulo, 0, 1)
@@ -486,7 +495,7 @@ class CursoWindow(QWidget):
 
     def _painel_base(self, titulo):
         painel = QFrame()
-        painel.setMinimumWidth(450)
+        painel.setMinimumWidth(240)
         painel.setStyleSheet("""
             QFrame {
                 background-color: white;

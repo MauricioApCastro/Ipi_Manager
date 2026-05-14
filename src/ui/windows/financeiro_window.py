@@ -18,7 +18,9 @@ from PyQt5.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QHeaderView,
+    QSplitter,
 )
+from PyQt5.QtCore import Qt
 
 from src.database.repositories import AlunoRepository, FinanceiroRepository
 from src.services.recibo_service import gerar_recibo_pagamento_pdf
@@ -43,19 +45,26 @@ class FinanceiroWindow(QWidget):
         titulo = QLabel("Financeiro")
         titulo.setStyleSheet("color: #0f172a; font-size: 42px; font-weight: 900;")
         subtitulo = QLabel("Gere recibos em planilha para enviar ao aluno.")
+        subtitulo.setWordWrap(True)
         subtitulo.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
         layout.addWidget(titulo)
         layout.addWidget(subtitulo)
 
-        body = QHBoxLayout()
-        body.setSpacing(14)
-        body.addWidget(self._criar_painel_recibo(), 5)
-        lado_direito = QVBoxLayout()
+        body = QSplitter(Qt.Horizontal)
+        body.setChildrenCollapsible(False)
+
+        lado_direito_widget = QWidget()
+        lado_direito = QVBoxLayout(lado_direito_widget)
+        lado_direito.setContentsMargins(0, 0, 0, 0)
         lado_direito.setSpacing(14)
         lado_direito.addWidget(self._criar_painel_preview(), 2)
         lado_direito.addWidget(self._criar_painel_pendentes_mes(), 5)
-        body.addLayout(lado_direito, 7)
-        layout.addLayout(body, 1)
+        body.addWidget(self._criar_painel_recibo())
+        body.addWidget(lado_direito_widget)
+        body.setStretchFactor(0, 5)
+        body.setStretchFactor(1, 7)
+        body.setSizes([420, 720])
+        layout.addWidget(body, 1)
 
     def _criar_painel_recibo(self):
         painel = self._painel_base("Recibo do aluno")
@@ -375,6 +384,7 @@ class FinanceiroWindow(QWidget):
 
     def _painel_base(self, titulo):
         painel = QFrame()
+        painel.setMinimumWidth(240)
         painel.setStyleSheet("""
             QFrame {
                 background-color: white;

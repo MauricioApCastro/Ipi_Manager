@@ -13,7 +13,9 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QHeaderView,
     QMessageBox,
+    QSplitter,
 )
+from PyQt5.QtCore import Qt
 
 from src.database.repositories import TurmaRepository
 
@@ -40,6 +42,7 @@ class TurmaWindow(QWidget):
         titulo = QLabel("Turmas")
         titulo.setStyleSheet("color: #0f172a; font-size: 42px; font-weight: 900;")
         subtitulo = QLabel("Forme turmas com 2 aulas semanais de 1 hora e vagas conforme os 8 PCs.")
+        subtitulo.setWordWrap(True)
         subtitulo.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
 
         title_box.addWidget(titulo)
@@ -48,11 +51,14 @@ class TurmaWindow(QWidget):
         header.addStretch()
         layout.addLayout(header)
 
-        body = QHBoxLayout()
-        body.setSpacing(14)
-        body.addWidget(self._criar_painel_form(), 4)
-        body.addWidget(self._criar_painel_tabela(), 8)
-        layout.addLayout(body, 1)
+        body = QSplitter(Qt.Horizontal)
+        body.setChildrenCollapsible(False)
+        body.addWidget(self._criar_painel_form())
+        body.addWidget(self._criar_painel_tabela())
+        body.setStretchFactor(0, 4)
+        body.setStretchFactor(1, 8)
+        body.setSizes([340, 760])
+        layout.addWidget(body, 1)
 
     def _criar_painel_form(self):
         painel = self._painel_base("Dados da turma")
@@ -274,6 +280,7 @@ class TurmaWindow(QWidget):
 
     def _painel_base(self, titulo):
         painel = QFrame()
+        painel.setMinimumWidth(240)
         painel.setStyleSheet("""
             QFrame {
                 background-color: white;

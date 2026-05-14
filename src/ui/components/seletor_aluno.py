@@ -5,7 +5,8 @@ class SeletorAlunoDialog(QDialog):
     def __init__(self, alunos_turma, todos_alunos, parent=None, titulo_turma="Alunos do horário"):
         super().__init__(parent)
         self.setWindowTitle("Selecionar Aluno")
-        self.setFixedSize(620, 720)
+        self.resize(620, 720)
+        self.setMinimumSize(360, 420)
         self.aluno_selecionado = None
 
         layout = QVBoxLayout(self)

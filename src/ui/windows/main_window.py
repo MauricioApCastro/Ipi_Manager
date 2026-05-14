@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QScrollArea,
     QStackedWidget,
+    QApplication,
 )
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtGui import QCursor, QDesktopServices
@@ -33,9 +34,12 @@ class MainWindow(QMainWindow):
         self.repo_maquina = MaquinaRepository(self.db)
         self.repo_aluno = AlunoRepository(self.db)
         self.menu_buttons = {}
+        self.maquina_cards = []
         self.setWindowTitle("IPI PRO - Gestão de Sala")
-        self.resize(1280, 960)
-        self.setMinimumSize(1024, 720)
+        self.monitor_disponivel = self._monitor_disponivel()
+        self.compacto_monitor = self.monitor_disponivel.height() <= 760
+        self.setMinimumSize(640, 480)
+        self.resize(self.monitor_disponivel.size())
         self.setup_ui()
         self.carregar_maquinas()
 
@@ -58,8 +62,9 @@ class MainWindow(QMainWindow):
         self.content_area = QWidget()
         self.content_area.setStyleSheet("background-color: #f4f7fb;")
         self.content_layout = QVBoxLayout(self.content_area)
-        self.content_layout.setContentsMargins(26, 24, 26, 24)
-        self.content_layout.setSpacing(18)
+        margem = 10 if self.compacto_monitor else 18
+        self.content_layout.setContentsMargins(margem, margem, margem, margem)
+        self.content_layout.setSpacing(8 if self.compacto_monitor else 12)
 
         self._criar_header()
         self._criar_grid_maquinas()
@@ -97,6 +102,12 @@ class MainWindow(QMainWindow):
         self.sidebar_timer.timeout.connect(self._atualizar_sidebar_retratil)
         self.sidebar_timer.start()
 
+    def _monitor_disponivel(self):
+        tela = QApplication.primaryScreen()
+        if tela:
+            return tela.availableGeometry()
+        return self.geometry()
+
     def _atualizar_sidebar_retratil(self):
         pos = self.mapFromGlobal(QCursor.pos())
         dentro_janela = self.rect().contains(pos)
@@ -130,10 +141,12 @@ class MainWindow(QMainWindow):
         super().resizeEvent(event)
         if hasattr(self, "sidebar"):
             self._posicionar_sidebar()
+        if hasattr(self, "maquina_cards") and self.stack.currentIndex() == 0:
+            self._reposicionar_maquinas()
 
     def _criar_sidebar(self):
         sidebar = QFrame()
-        sidebar.setFixedWidth(300)
+        sidebar.setFixedWidth(280)
         sidebar.setObjectName("Sidebar")
         sidebar.setStyleSheet("""
             #Sidebar {
@@ -242,7 +255,7 @@ class MainWindow(QMainWindow):
 
     def _criar_header(self):
         header = QHBoxLayout()
-        header.setSpacing(14)
+        header.setSpacing(10 if self.compacto_monitor else 14)
 
         title_box = QVBoxLayout()
         title_box.setSpacing(4)
@@ -250,7 +263,7 @@ class MainWindow(QMainWindow):
         self.lbl_titulo = QLabel("Painel de Máquinas")
         self.lbl_titulo.setStyleSheet("""
             color: #0f172a;
-            font-size: 50px;
+            font-size: 34px;
             font-weight: 900;
         """)
 
@@ -267,8 +280,8 @@ class MainWindow(QMainWindow):
                 color: #0f172a;
                 border: 1px solid #dbe3ef;
                 border-radius: 14px;
-                padding: 15px 22px;
-                font-size: 20px;
+                padding: 10px 16px;
+                font-size: 16px;
                 font-weight: 800;
             }
 
@@ -286,6 +299,8 @@ class MainWindow(QMainWindow):
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QFrame.NoFrame)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_area.setStyleSheet("""
             QScrollArea {
                 background: transparent;
@@ -329,10 +344,10 @@ class MainWindow(QMainWindow):
             if widget:
                 widget.setParent(None)
 
+        self.maquina_cards = []
         maquinas = self.repo_maquina.get_all()
-        colunas = 4
 
-        for idx, maq in enumerate(maquinas):
+        for maq in maquinas:
             card = MaquinaCard(maq)
             card.solicitar_alocacao.connect(self.abrir_gerenciamento)
 
@@ -345,6 +360,51 @@ class MainWindow(QMainWindow):
                         card.txt_obs.setText(aluno.observacoes or "")
                         self._conectar_salvar_obs(card)
 
+            self.maquina_cards.append(card)
+
+        self._reposicionar_maquinas()
+
+    def _layout_maquinas(self):
+        largura = self.scroll_area.viewport().width()
+        altura = self.scroll_area.viewport().height()
+        total = max(len(self.maquina_cards), 1)
+        espacamento = self.grid_maquinas.horizontalSpacing()
+        margem_horizontal = 8
+        margem_vertical = 26
+        candidatos = []
+
+        for colunas in range(min(4, total), 0, -1):
+            largura_card = (largura - margem_horizontal - (colunas - 1) * espacamento) / colunas
+            if largura_card < 200:
+                continue
+
+            linhas = (total + colunas - 1) // colunas
+            altura_card = (altura - margem_vertical - (linhas - 1) * espacamento) / linhas
+            candidatos.append((colunas, int(altura_card)))
+
+        if candidatos:
+            colunas, altura_card = candidatos[0]
+        else:
+            colunas = 1
+            altura_card = int((altura - margem_vertical - (total - 1) * espacamento) / total)
+
+        altura_card = max(180, min(330, altura_card))
+        compacto = altura_card < 270 or self.monitor_disponivel.height() < 760
+        return colunas, altura_card, compacto
+
+    def _reposicionar_maquinas(self):
+        while self.grid_maquinas.count():
+            item = self.grid_maquinas.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.setParent(None)
+
+        colunas, altura_card, compacto = self._layout_maquinas()
+        for coluna in range(4):
+            self.grid_maquinas.setColumnStretch(coluna, 1 if coluna < colunas else 0)
+
+        for idx, card in enumerate(self.maquina_cards):
+            card.ajustar_para_monitor(altura_card, compacto)
             self.grid_maquinas.addWidget(card, idx // colunas, idx % colunas)
 
     def _conectar_salvar_obs(self, card):

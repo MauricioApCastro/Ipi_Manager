@@ -6,7 +6,8 @@ class CadastroAlunoWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Cadastrar Novo Aluno")
-        self.setFixedSize(680, 760)
+        self.resize(680, 760)
+        self.setMinimumSize(360, 480)
         self.setup_ui()
 
     def setup_ui(self):

@@ -2,6 +2,7 @@ import os
 import sys
 
 from PyQt5.QtGui import QFont
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
 from src.database.db_handler import Database
@@ -34,9 +35,15 @@ def inicializar_sistema():
 
 
 if __name__ == "__main__":
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
-    app.setFont(QFont("Segoe UI", 20))
+    tela = app.primaryScreen()
+    altura_monitor = tela.availableGeometry().height() if tela else 900
+    tamanho_fonte = 17 if altura_monitor <= 720 else 18 if altura_monitor <= 900 else 20
+    app.setFont(QFont("Segoe UI", tamanho_fonte))
 
     banco = inicializar_sistema()
 

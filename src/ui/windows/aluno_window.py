@@ -15,7 +15,9 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QHeaderView,
     QMessageBox,
+    QSplitter,
 )
+from PyQt5.QtCore import Qt
 
 from src.database.repositories import AlunoRepository, CursoRepository
 from src.models.aluno import Aluno
@@ -46,6 +48,7 @@ class AlunoWindow(QWidget):
         titulo = QLabel("Alunos")
         titulo.setStyleSheet("color: #0f172a; font-size: 42px; font-weight: 900;")
         subtitulo = QLabel("Cada turma tem 2 aulas semanais de 1 hora, com 8 PCs por horário.")
+        subtitulo.setWordWrap(True)
         subtitulo.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
         title_box.addWidget(titulo)
         title_box.addWidget(subtitulo)
@@ -54,23 +57,28 @@ class AlunoWindow(QWidget):
 
         self.txt_busca = QLineEdit()
         self.txt_busca.setPlaceholderText("Buscar aluno")
-        self.txt_busca.setMinimumWidth(280)
+        self.txt_busca.setMinimumWidth(180)
         self.txt_busca.textChanged.connect(self.filtrar_tabela)
         self._preparar_campo(self.txt_busca)
         header.addWidget(self.txt_busca)
         layout.addLayout(header)
 
-        body = QHBoxLayout()
-        body.setSpacing(14)
+        body = QSplitter(Qt.Horizontal)
+        body.setChildrenCollapsible(False)
 
-        coluna_alunos = QVBoxLayout()
+        coluna_alunos_widget = QWidget()
+        coluna_alunos = QVBoxLayout(coluna_alunos_widget)
+        coluna_alunos.setContentsMargins(0, 0, 0, 0)
         coluna_alunos.setSpacing(14)
         coluna_alunos.addWidget(self._criar_painel_academico(), 3)
         coluna_alunos.addWidget(self._criar_painel_tabela(), 5)
 
-        body.addWidget(self._criar_painel_dados(), 4)
-        body.addLayout(coluna_alunos, 7)
-        layout.addLayout(body, 1)
+        body.addWidget(self._criar_painel_dados())
+        body.addWidget(coluna_alunos_widget)
+        body.setStretchFactor(0, 4)
+        body.setStretchFactor(1, 7)
+        body.setSizes([360, 720])
+        layout.addWidget(body, 1)
 
     def _criar_painel_dados(self):
         painel = self._painel_base("Dados do aluno")
@@ -425,6 +433,7 @@ class AlunoWindow(QWidget):
 
     def _painel_base(self, titulo):
         painel = QFrame()
+        painel.setMinimumWidth(240)
         painel.setStyleSheet("""
             QFrame {
                 background-color: white;
