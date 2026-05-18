@@ -219,6 +219,39 @@ class AlunoRepository:
                 alunos.append(aluno)
         return alunos
 
+    def get_turmas_do_dia_com_alunos(self):
+        dia_atual = self._normalizar_dia_semana(datetime.now().weekday())
+        alunos = self.get_all()
+        alunos_por_turma = {}
+        for aluno in alunos:
+            alunos_por_turma.setdefault(aluno.turma_id, []).append(aluno)
+
+        turmas_do_dia = []
+        for turma in self.get_turmas_com_vagas():
+            (
+                turma_id,
+                nome,
+                dia1,
+                horario1,
+                dia2,
+                horario2,
+                _duracao,
+                _aulas_semana,
+                _capacidade,
+                _ocupadas,
+            ) = turma
+
+            alunos_turma = sorted(
+                alunos_por_turma.get(turma_id, []),
+                key=lambda aluno: (aluno.nome or "").lower(),
+            )
+            if self._normalizar_texto_dia(dia1) == dia_atual:
+                turmas_do_dia.append((horario1 or "", nome, alunos_turma))
+            if self._normalizar_texto_dia(dia2) == dia_atual:
+                turmas_do_dia.append((horario2 or "", nome, alunos_turma))
+
+        return sorted(turmas_do_dia, key=lambda item: self._minutos_horario(item[0]))
+
     def get_turmas_ativas_agora(self):
         agora = datetime.now()
         dia_atual = self._normalizar_dia_semana(agora.weekday())
@@ -256,6 +289,13 @@ class AlunoRepository:
         inicio = agora.replace(hour=hora, minute=minuto, second=0, microsecond=0)
         fim = inicio + timedelta(minutes=duracao or 60)
         return inicio <= agora <= fim
+
+    def _minutos_horario(self, horario):
+        try:
+            hora, minuto = [int(parte) for parte in (horario or "").split(":")[:2]]
+        except ValueError:
+            return 24 * 60
+        return hora * 60 + minuto
 
     def _normalizar_dia_semana(self, weekday):
         dias = ["segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo"]
@@ -374,7 +414,7 @@ class AlunoRepository:
             conn.execute(query, (texto_obs, nome_aluno))
             conn.commit()
 
-    def registrar_presenca(self, aluno_id, maquina_tag, observacao="Entrada registrada por alocação"):
+    def registrar_presenca(self, aluno_id, maquina_tag, observacao="Presente"):
         query = """
             INSERT INTO presencas (aluno_id, maquina_tag, data_hora, observacao)
             VALUES (?, ?, ?, ?)
@@ -838,3 +878,68 @@ class CursoRepository:
                 self.add_aula(modulo_id, f"Aula {aula:02d}", ordem)
 
         return curso_id
+
+
+class CaixaRepository:
+    def __init__(self, db):
+        self.db = db
+        self.ensure_schema()
+
+    def ensure_schema(self):
+        with self.db.connection() as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS caixa_entradas (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    data TEXT NOT NULL,
+                    descricao TEXT NOT NULL,
+                    categoria TEXT NOT NULL,
+                    valor REAL NOT NULL DEFAULT 0,
+                    status TEXT NOT NULL DEFAULT 'PREVISTO',
+                    observacoes TEXT
+                )
+            """)
+            conn.commit()
+
+    def add_entrada(self, data, descricao, categoria, valor, status, observacoes=""):
+        query = """
+            INSERT INTO caixa_entradas (data, descricao, categoria, valor, status, observacoes)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """
+        with self.db.connection() as conn:
+            cursor = conn.execute(query, (data, descricao, categoria, valor, status, observacoes))
+            conn.commit()
+            return cursor.lastrowid
+
+    def update_entrada(self, entrada_id, data, descricao, categoria, valor, status, observacoes=""):
+        query = """
+            UPDATE caixa_entradas
+            SET data = ?, descricao = ?, categoria = ?, valor = ?, status = ?, observacoes = ?
+            WHERE id = ?
+        """
+        with self.db.connection() as conn:
+            conn.execute(query, (data, descricao, categoria, valor, status, observacoes, entrada_id))
+            conn.commit()
+
+    def delete_entrada(self, entrada_id):
+        with self.db.connection() as conn:
+            conn.execute("DELETE FROM caixa_entradas WHERE id = ?", (entrada_id,))
+            conn.commit()
+
+    def get_entradas_mes(self, ano, mes):
+        inicio = f"{ano:04d}-{mes:02d}-01"
+        fim = f"{ano + 1:04d}-01-01" if mes == 12 else f"{ano:04d}-{mes + 1:02d}-01"
+        query = """
+            SELECT id, data, descricao, categoria, valor, status, observacoes
+            FROM caixa_entradas
+            WHERE data >= ? AND data < ?
+            ORDER BY data DESC, id DESC
+        """
+        with self.db.connection() as conn:
+            return conn.execute(query, (inicio, fim)).fetchall()
+
+    def totais_mes(self, ano, mes):
+        entradas = self.get_entradas_mes(ano, mes)
+        previsto = sum(row[4] or 0 for row in entradas)
+        recebido = sum(row[4] or 0 for row in entradas if row[5] == "RECEBIDO")
+        pendente = previsto - recebido
+        return previsto, recebido, pendente

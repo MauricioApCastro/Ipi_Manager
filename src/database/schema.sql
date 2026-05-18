@@ -88,3 +88,13 @@ CREATE TABLE IF NOT EXISTS mensagens_responsavel (
     status TEXT DEFAULT 'GERADA',
     FOREIGN KEY (aluno_id) REFERENCES alunos(id)
 );
+
+CREATE TABLE IF NOT EXISTS caixa_entradas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data TEXT NOT NULL,
+    descricao TEXT NOT NULL,
+    categoria TEXT NOT NULL,
+    valor REAL NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'PREVISTO',
+    observacoes TEXT
+);

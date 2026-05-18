@@ -87,9 +87,6 @@ class TurmaWindow(QWidget):
         self.spin_capacidade.setSuffix(" PCs")
         self._preparar_campo(self.spin_capacidade)
 
-        regra = QLabel("Regra fixa: 2 aulas por semana, 60 minutos cada.")
-        regra.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 700;")
-
         botoes = QGridLayout()
         botoes.setHorizontalSpacing(10)
         botoes.setVerticalSpacing(10)
@@ -122,7 +119,6 @@ class TurmaWindow(QWidget):
         layout.addLayout(linha1)
         layout.addLayout(linha2)
         layout.addWidget(self.spin_capacidade)
-        layout.addWidget(regra)
         layout.addLayout(botoes)
         layout.addStretch()
         return painel
@@ -131,12 +127,11 @@ class TurmaWindow(QWidget):
         painel = self._painel_base("Turmas formadas")
         layout = painel.layout()
 
-        self.tbl_turmas = QTableWidget(0, 7)
+        self.tbl_turmas = QTableWidget(0, 6)
         self.tbl_turmas.setHorizontalHeaderLabels([
             "Turma",
             "1ª aula",
             "2ª aula",
-            "Regra",
             "Cap.",
             "Ocupadas",
             "Livres",
@@ -159,8 +154,8 @@ class TurmaWindow(QWidget):
                 horario1,
                 dia2,
                 horario2,
-                duracao,
-                aulas_semana,
+                _duracao,
+                _aulas_semana,
                 capacidade,
                 ocupadas,
             ) = turma
@@ -170,10 +165,9 @@ class TurmaWindow(QWidget):
             self.tbl_turmas.setItem(row, 0, QTableWidgetItem(nome or ""))
             self.tbl_turmas.setItem(row, 1, QTableWidgetItem(f"{dia1} {horario1}"))
             self.tbl_turmas.setItem(row, 2, QTableWidgetItem(f"{dia2} {horario2}"))
-            self.tbl_turmas.setItem(row, 3, QTableWidgetItem(f"{aulas_semana}x {duracao}min"))
-            self.tbl_turmas.setItem(row, 4, QTableWidgetItem(str(capacidade or 8)))
-            self.tbl_turmas.setItem(row, 5, QTableWidgetItem(str(ocupadas or 0)))
-            self.tbl_turmas.setItem(row, 6, QTableWidgetItem(str(livres)))
+            self.tbl_turmas.setItem(row, 3, QTableWidgetItem(str(capacidade or 8)))
+            self.tbl_turmas.setItem(row, 4, QTableWidgetItem(str(ocupadas or 0)))
+            self.tbl_turmas.setItem(row, 5, QTableWidgetItem(str(livres)))
 
         self.tbl_turmas.blockSignals(False)
 

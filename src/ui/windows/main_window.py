@@ -1,4 +1,7 @@
 from datetime import datetime
+from pathlib import Path
+import shutil
+import sqlite3
 from urllib.parse import quote
 
 from PyQt5.QtWidgets import (
@@ -14,6 +17,7 @@ from PyQt5.QtWidgets import (
     QScrollArea,
     QStackedWidget,
     QApplication,
+    QFileDialog,
 )
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtGui import QCursor, QDesktopServices
@@ -22,8 +26,10 @@ from src.database.repositories import MaquinaRepository, AlunoRepository, CursoR
 from src.ui.components.maquina_card import MaquinaCard
 from src.ui.components.seletor_aluno import SeletorAlunoDialog
 from src.ui.windows.aluno_window import AlunoWindow
+from src.ui.windows.caixa_window import CaixaWindow
 from src.ui.windows.curso_window import CursoWindow
 from src.ui.windows.financeiro_window import FinanceiroWindow
+from src.ui.windows.frequencia_window import FrequenciaWindow
 from src.ui.windows.turma_window import TurmaWindow
 
 
@@ -74,12 +80,16 @@ class MainWindow(QMainWindow):
         self.turma_window = TurmaWindow(self.db)
         self.curso_window = CursoWindow(self.db)
         self.financeiro_window = FinanceiroWindow(self.db)
+        self.caixa_window = CaixaWindow(self.db)
+        self.frequencia_window = FrequenciaWindow(self.db)
 
         self.stack.addWidget(self.content_area)
         self.stack.addWidget(self.aluno_window)
         self.stack.addWidget(self.turma_window)
         self.stack.addWidget(self.curso_window)
         self.stack.addWidget(self.financeiro_window)
+        self.stack.addWidget(self.caixa_window)
+        self.stack.addWidget(self.frequencia_window)
         self.main_layout.addWidget(self.stack)
 
         self.sidebar = self._criar_sidebar()
@@ -91,6 +101,9 @@ class MainWindow(QMainWindow):
         self.menu_buttons["Turmas"].clicked.connect(lambda: self._trocar_tela(2, "Turmas"))
         self.menu_buttons["Cursos"].clicked.connect(lambda: self._trocar_tela(3, "Cursos"))
         self.menu_buttons["Financeiro"].clicked.connect(lambda: self._trocar_tela(4, "Financeiro"))
+        self.menu_buttons["Caixa"].clicked.connect(lambda: self._trocar_tela(5, "Caixa"))
+        self.menu_buttons["Frequência"].clicked.connect(lambda: self._trocar_tela(6, "Frequência"))
+        self.btn_backup.clicked.connect(self.fazer_backup)
         self._configurar_sidebar_retratil()
 
     def _configurar_sidebar_retratil(self):
@@ -189,7 +202,8 @@ class MainWindow(QMainWindow):
             ("Turmas", False),
             ("Cursos", False),
             ("Financeiro", False),
-            ("Relatórios", False),
+            ("Caixa", False),
+            ("Frequência", False),
         ]
 
         for nome, ativo in menus:
@@ -201,6 +215,11 @@ class MainWindow(QMainWindow):
 
         layout.addStretch()
 
+        self.btn_backup = QPushButton("Backup")
+        self.btn_backup.setCursor(Qt.PointingHandCursor)
+        self.btn_backup.setStyleSheet(self._sidebar_backup_style())
+        layout.addWidget(self.btn_backup)
+
         footer = QLabel("Sistema IPI")
         footer.setStyleSheet("""
             color: #64748b;
@@ -211,6 +230,48 @@ class MainWindow(QMainWindow):
         layout.addWidget(footer)
 
         return sidebar
+
+    def fazer_backup(self):
+        destino_base = QFileDialog.getExistingDirectory(
+            self,
+            "Escolher pasta para o backup",
+            str(Path.home()),
+        )
+        if not destino_base:
+            return
+
+        try:
+            pasta_backup = self._criar_backup(Path(destino_base))
+        except Exception as exc:
+            QMessageBox.critical(self, "Backup", f"NÃ£o foi possÃ­vel fazer o backup:\n{exc}")
+            return
+
+        QMessageBox.information(
+            self,
+            "Backup",
+            f"Backup concluÃ­do com sucesso:\n{pasta_backup}",
+        )
+
+    def _criar_backup(self, destino_base):
+        db_path = Path(getattr(self.db, "db_path", "data/escola.db")).resolve()
+        if not db_path.exists():
+            raise FileNotFoundError(f"Banco de dados nÃ£o encontrado: {db_path}")
+
+        pasta_backup = destino_base / f"backup_ipi_manager_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        pasta_backup.mkdir(parents=True, exist_ok=False)
+
+        self._backup_sqlite(db_path, pasta_backup / "escola.db")
+
+        recibos_origem = db_path.parent.parent / "recibos"
+        if recibos_origem.exists():
+            shutil.copytree(recibos_origem, pasta_backup / "recibos")
+
+        return pasta_backup
+
+    def _backup_sqlite(self, origem, destino):
+        with sqlite3.connect(str(origem)) as conn_origem:
+            with sqlite3.connect(str(destino)) as conn_destino:
+                conn_origem.backup(conn_destino)
 
     def _sidebar_button_style(self):
         return """
@@ -239,6 +300,24 @@ class MainWindow(QMainWindow):
             }
         """
 
+    def _sidebar_backup_style(self):
+        return """
+            QPushButton {
+                color: #f8fafc;
+                text-align: left;
+                padding: 14px 18px;
+                border: 1px solid rgba(34, 197, 94, 0.35);
+                border-radius: 12px;
+                background-color: rgba(22, 163, 74, 0.18);
+                font-size: 20px;
+                font-weight: 800;
+            }
+
+            QPushButton:hover {
+                background-color: rgba(22, 163, 74, 0.32);
+            }
+        """
+
     def _trocar_tela(self, index, menu_ativo):
         if menu_ativo == "Alunos":
             self.aluno_window.carregar_dados()
@@ -246,6 +325,10 @@ class MainWindow(QMainWindow):
             self.turma_window.carregar_dados()
         if menu_ativo == "Financeiro":
             self.financeiro_window.carregar_dados()
+        if menu_ativo == "Caixa":
+            self.caixa_window.carregar_dados()
+        if menu_ativo == "Frequência":
+            self.frequencia_window.carregar_dados()
         self.stack.setCurrentIndex(index)
         for nome, botao in self.menu_buttons.items():
             botao.setStyleSheet(
@@ -396,14 +479,18 @@ class MainWindow(QMainWindow):
 
     def abrir_gerenciamento(self, card_que_pediu):
         if card_que_pediu.maquina.status == "OCUPADO":
-            resposta = QMessageBox.question(
-                self,
-                "Finalizar Aula",
-                f"O aluno {card_que_pediu.maquina.ocupante} concluiu a lição de hoje?",
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-            )
+            dialogo = QMessageBox(self)
+            dialogo.setWindowTitle("Finalizar Aula")
+            dialogo.setText(f"O aluno {card_que_pediu.maquina.ocupante} concluiu a lição de hoje?")
+            dialogo.setIcon(QMessageBox.Question)
+            botao_sim = dialogo.addButton("Sim", QMessageBox.YesRole)
+            dialogo.addButton("Não", QMessageBox.NoRole)
+            botao_cancelar = dialogo.addButton("Cancelar", QMessageBox.RejectRole)
+            dialogo.setDefaultButton(botao_sim)
+            dialogo.exec_()
+            resposta = dialogo.clickedButton()
 
-            if resposta == QMessageBox.Cancel:
+            if resposta == botao_cancelar:
                 return
 
             if card_que_pediu.txt_obs.text():
@@ -412,7 +499,7 @@ class MainWindow(QMainWindow):
                     card_que_pediu.txt_obs.text(),
                 )
 
-            if resposta == QMessageBox.Yes:
+            if resposta == botao_sim:
                 aluno_obj = self.repo_aluno.get_by_name(card_que_pediu.maquina.ocupante)
                 if aluno_obj:
                     nova_licao, novo_modulo, curso_concluido = self._proximo_passo_aluno(aluno_obj)
@@ -433,11 +520,13 @@ class MainWindow(QMainWindow):
             aluno for aluno in self.repo_aluno.get_all()
             if not self._curso_concluido(aluno)
         ]
+        turmas_hoje = self._turmas_hoje_para_seletor()
         seletor = SeletorAlunoDialog(
             alunos_horario,
             todos_alunos,
             self,
             titulo_turma="Horário atual",
+            turmas_hoje=turmas_hoje,
         )
 
         if seletor.exec_():
@@ -466,6 +555,16 @@ class MainWindow(QMainWindow):
                 card_que_pediu.txt_obs.setText(aluno.observacoes or "")
                 self._conectar_salvar_obs(card_que_pediu)
                 self.carregar_maquinas()
+
+    def _turmas_hoje_para_seletor(self):
+        turmas_hoje = []
+        for horario, turma, alunos in self.repo_aluno.get_turmas_do_dia_com_alunos():
+            alunos_ativos = [
+                aluno for aluno in alunos
+                if not self._curso_concluido(aluno)
+            ]
+            turmas_hoje.append((horario, turma, alunos_ativos))
+        return turmas_hoje
 
     def _registrar_presenca_e_notificar(self, aluno, maquina_tag):
         data_hora = self.repo_aluno.registrar_presenca(aluno.id, maquina_tag)

@@ -12,17 +12,18 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QSpinBox,
     QDoubleSpinBox,
-    QComboBox,
     QFileDialog,
     QMessageBox,
     QTableWidget,
     QTableWidgetItem,
     QHeaderView,
     QSplitter,
+    QListWidget,
+    QListWidgetItem,
 )
 from PyQt5.QtCore import Qt
 
-from src.database.repositories import AlunoRepository, FinanceiroRepository
+from src.database.repositories import AlunoRepository, CaixaRepository, FinanceiroRepository
 from src.services.recibo_service import gerar_recibo_pagamento_pdf
 
 
@@ -31,8 +32,10 @@ class FinanceiroWindow(QWidget):
         super().__init__()
         self.repo_aluno = AlunoRepository(db)
         self.repo_financeiro = FinanceiroRepository(db)
+        self.repo_caixa = CaixaRepository(db)
         self.alunos = []
         self.alunos_filtrados = []
+        self.aluno_selecionado_id = None
         self.carregando_config = False
         self.setup_ui()
         self.carregar_dados()
@@ -70,12 +73,12 @@ class FinanceiroWindow(QWidget):
         painel = self._painel_base("Recibo do aluno")
         layout = painel.layout()
 
-        self.combo_aluno = QComboBox()
-        self.combo_aluno.currentIndexChanged.connect(self.carregar_financeiro_aluno)
-        self._preparar_campo(self.combo_aluno)
-
-        self.txt_busca = self._line_edit("Buscar aluno")
+        self.txt_busca = self._line_edit("Buscar pelas iniciais")
         self.txt_busca.textChanged.connect(self.filtrar_alunos)
+
+        self.lista_alunos = QListWidget()
+        self.lista_alunos.itemClicked.connect(self.selecionar_aluno_lista)
+        self._preparar_lista(self.lista_alunos)
 
         linha_data = QHBoxLayout()
         self.txt_primeiro_pagamento = self._line_edit("dd/mm/aaaa")
@@ -138,7 +141,7 @@ class FinanceiroWindow(QWidget):
         self.btn_gerar.setStyleSheet(self._primary_button_style())
 
         layout.addWidget(self.txt_busca)
-        layout.addWidget(self.combo_aluno)
+        layout.addWidget(self.lista_alunos)
         layout.addLayout(linha_data)
         layout.addLayout(linha_valores)
         layout.addWidget(self.spin_pagas)
@@ -181,6 +184,7 @@ class FinanceiroWindow(QWidget):
         self.tbl_pendentes_mes = QTableWidget(0, 4)
         self.tbl_pendentes_mes.setHorizontalHeaderLabels(["Aluno", "Parcela", "Pagas", "Telefone"])
         self._preparar_tabela(self.tbl_pendentes_mes)
+        self.tbl_pendentes_mes.cellClicked.connect(self.selecionar_aluno_pendente)
 
         layout.addWidget(self.lbl_pendentes_mes)
         layout.addWidget(self.tbl_pendentes_mes)
@@ -188,44 +192,77 @@ class FinanceiroWindow(QWidget):
 
     def carregar_dados(self):
         self.alunos = self.repo_aluno.get_all()
-        self.alunos_filtrados = self.alunos[:]
-        self._popular_combo_alunos()
+        self.alunos_filtrados = []
+        self.aluno_selecionado_id = None
+        self._popular_lista_alunos()
         self.carregar_financeiro_aluno()
         self.atualizar_pendentes_mes()
 
-    def _popular_combo_alunos(self):
-        atual = self.combo_aluno.currentData()
-        self.combo_aluno.blockSignals(True)
-        self.combo_aluno.clear()
+    def _popular_lista_alunos(self):
+        self.lista_alunos.blockSignals(True)
+        self.lista_alunos.clear()
         for aluno in self.alunos_filtrados:
-            self.combo_aluno.addItem(aluno.nome, aluno.id)
-        index = self.combo_aluno.findData(atual)
-        if index >= 0:
-            self.combo_aluno.setCurrentIndex(index)
-        self.combo_aluno.blockSignals(False)
+            item = QListWidgetItem(aluno.nome or "")
+            item.setData(Qt.UserRole, aluno.id)
+            self.lista_alunos.addItem(item)
+            if aluno.id == self.aluno_selecionado_id:
+                self.lista_alunos.setCurrentItem(item)
+        self.lista_alunos.blockSignals(False)
 
     def filtrar_alunos(self):
         termo = self.txt_busca.text().strip().lower()
+        self.aluno_selecionado_id = None
         if not termo:
-            self.alunos_filtrados = self.alunos[:]
+            self.alunos_filtrados = []
         else:
             self.alunos_filtrados = [
                 aluno for aluno in self.alunos
-                if termo in (aluno.nome or "").lower()
-                or termo in (aluno.cpf or "").lower()
+                if (aluno.nome or "").strip().lower().startswith(termo)
             ]
-        self._popular_combo_alunos()
+        self._popular_lista_alunos()
         self.carregar_financeiro_aluno()
 
     def aluno_atual(self):
-        aluno_id = self.combo_aluno.currentData()
+        aluno_id = self.aluno_selecionado_id
         if not aluno_id:
             return None
         return next((aluno for aluno in self.alunos if aluno.id == aluno_id), None)
 
+    def selecionar_aluno_lista(self, item):
+        aluno_id = item.data(Qt.UserRole)
+        if not aluno_id:
+            return
+        self.aluno_selecionado_id = aluno_id
+        self.carregar_financeiro_aluno()
+
+    def selecionar_aluno_pendente(self, row, _column):
+        item = self.tbl_pendentes_mes.item(row, 0)
+        if not item:
+            return
+
+        aluno_id = item.data(Qt.UserRole)
+        if not aluno_id:
+            return
+
+        aluno = next((item for item in self.alunos if item.id == aluno_id), None)
+        if not aluno:
+            return
+
+        self.aluno_selecionado_id = aluno_id
+        self.txt_busca.blockSignals(True)
+        self.txt_busca.setText(aluno.nome or "")
+        self.txt_busca.blockSignals(False)
+        self.alunos_filtrados = [
+            item for item in self.alunos
+            if (item.nome or "").strip().lower().startswith((aluno.nome or "").strip().lower())
+        ]
+        self._popular_lista_alunos()
+        self.carregar_financeiro_aluno()
+
     def carregar_financeiro_aluno(self):
         aluno = self.aluno_atual()
         if not aluno:
+            self.limpar_financeiro_aluno()
             self.atualizar_preview()
             return
 
@@ -239,6 +276,16 @@ class FinanceiroWindow(QWidget):
         self.txt_pix.setText(config["pix"])
         self.carregando_config = False
         self.atualizar_preview()
+
+    def limpar_financeiro_aluno(self):
+        self.carregando_config = True
+        self.txt_primeiro_pagamento.clear()
+        self.spin_pagas.setValue(0)
+        self.spin_valor.setValue(135.00)
+        self.spin_valor_atraso.setValue(155.00)
+        self.spin_vencimento.setValue(10)
+        self.txt_pix.setText("1196321-6999")
+        self.carregando_config = False
 
     def atualizar_preview(self):
         aluno = self.aluno_atual()
@@ -286,8 +333,20 @@ class FinanceiroWindow(QWidget):
             QMessageBox.warning(self, "Pagamento", "Informe a data do primeiro pagamento antes de registrar.")
             return
 
+        if self.spin_pagas.value() >= 14:
+            QMessageBox.information(self, "Pagamento", "Todas as parcelas deste aluno já foram pagas.")
+            return
+
         self.salvar_config_atual()
         novas_pagas = self.repo_financeiro.registrar_pagamento(aluno.id)
+        self.repo_caixa.add_entrada(
+            datetime.now().strftime("%Y-%m-%d"),
+            f"Mensalidade - {aluno.nome} - parcela {novas_pagas}/14",
+            "Mensalidade",
+            self.spin_valor.value(),
+            "RECEBIDO",
+            "Registrado pelo financeiro",
+        )
         self.spin_pagas.setValue(novas_pagas)
         self.atualizar_preview()
         self.atualizar_pendentes_mes()
@@ -355,7 +414,9 @@ class FinanceiroWindow(QWidget):
         self.tbl_pendentes_mes.setRowCount(0)
         for row, (aluno, parcela_atual, pagas) in enumerate(pendentes):
             self.tbl_pendentes_mes.insertRow(row)
-            self.tbl_pendentes_mes.setItem(row, 0, QTableWidgetItem(aluno.nome or ""))
+            item_aluno = QTableWidgetItem(aluno.nome or "")
+            item_aluno.setData(Qt.UserRole, aluno.id)
+            self.tbl_pendentes_mes.setItem(row, 0, item_aluno)
             self.tbl_pendentes_mes.setItem(row, 1, QTableWidgetItem(f"{parcela_atual}/14"))
             self.tbl_pendentes_mes.setItem(row, 2, QTableWidgetItem(f"{pagas}/14"))
             self.tbl_pendentes_mes.setItem(row, 3, QTableWidgetItem(aluno.whatsapp_aluno or aluno.whatsapp_resp or ""))
@@ -373,13 +434,13 @@ class FinanceiroWindow(QWidget):
                 horario,
                 segundo_dia,
                 segundo_horario,
-                duracao,
-                aulas_semana,
+                _duracao,
+                _aulas_semana,
                 _capacidade,
                 _ocupadas,
             ) = turma
             if tid == turma_id:
-                return f"{nome} - {dia} {horario} + {segundo_dia} {segundo_horario} ({aulas_semana}x {duracao}min)"
+                return f"{nome} - {dia} {horario} + {segundo_dia} {segundo_horario}"
         return "-"
 
     def _painel_base(self, titulo):
@@ -410,6 +471,30 @@ class FinanceiroWindow(QWidget):
     def _preparar_campo(self, campo):
         campo.setMinimumHeight(38)
         campo.setStyleSheet(self._input_style())
+
+    def _preparar_lista(self, lista):
+        lista.setMinimumHeight(130)
+        lista.setStyleSheet("""
+            QListWidget {
+                background-color: #f8fafc;
+                color: #0f172a;
+                border: 1px solid #dbe3ef;
+                border-radius: 10px;
+                font-size: 20px;
+                font-weight: 600;
+                outline: none;
+            }
+
+            QListWidget::item {
+                padding: 8px 10px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            QListWidget::item:selected {
+                background-color: #dbeafe;
+                color: #1e3a8a;
+            }
+        """)
 
     def _preparar_tabela(self, tabela):
         tabela.setAlternatingRowColors(True)
