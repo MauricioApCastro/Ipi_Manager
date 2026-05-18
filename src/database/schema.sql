@@ -96,5 +96,23 @@ CREATE TABLE IF NOT EXISTS caixa_entradas (
     categoria TEXT NOT NULL,
     valor REAL NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'PREVISTO',
+    tipo TEXT NOT NULL DEFAULT 'ENTRADA',
     observacoes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS calendario_excecoes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data TEXT NOT NULL UNIQUE,
+    descricao TEXT NOT NULL,
+    tipo TEXT NOT NULL DEFAULT 'FERIADO'
+);
+
+CREATE TABLE IF NOT EXISTS reposicoes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    aluno_id INTEGER NOT NULL,
+    data_falta TEXT NOT NULL,
+    data_reposicao TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDENTE',
+    observacoes TEXT,
+    FOREIGN KEY (aluno_id) REFERENCES alunos(id)
 );

@@ -27,9 +27,11 @@ from src.ui.components.maquina_card import MaquinaCard
 from src.ui.components.seletor_aluno import SeletorAlunoDialog
 from src.ui.windows.aluno_window import AlunoWindow
 from src.ui.windows.caixa_window import CaixaWindow
+from src.ui.windows.config_window import ConfigWindow
 from src.ui.windows.curso_window import CursoWindow
 from src.ui.windows.financeiro_window import FinanceiroWindow
 from src.ui.windows.frequencia_window import FrequenciaWindow
+from src.ui.windows.historico_window import HistoricoWindow
 from src.ui.windows.turma_window import TurmaWindow
 
 
@@ -82,6 +84,8 @@ class MainWindow(QMainWindow):
         self.financeiro_window = FinanceiroWindow(self.db)
         self.caixa_window = CaixaWindow(self.db)
         self.frequencia_window = FrequenciaWindow(self.db)
+        self.historico_window = HistoricoWindow(self.db)
+        self.config_window = ConfigWindow(self.db)
 
         self.stack.addWidget(self.content_area)
         self.stack.addWidget(self.aluno_window)
@@ -90,6 +94,8 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.financeiro_window)
         self.stack.addWidget(self.caixa_window)
         self.stack.addWidget(self.frequencia_window)
+        self.stack.addWidget(self.historico_window)
+        self.stack.addWidget(self.config_window)
         self.main_layout.addWidget(self.stack)
 
         self.sidebar = self._criar_sidebar()
@@ -103,6 +109,8 @@ class MainWindow(QMainWindow):
         self.menu_buttons["Financeiro"].clicked.connect(lambda: self._trocar_tela(4, "Financeiro"))
         self.menu_buttons["Caixa"].clicked.connect(lambda: self._trocar_tela(5, "Caixa"))
         self.menu_buttons["Frequência"].clicked.connect(lambda: self._trocar_tela(6, "Frequência"))
+        self.menu_buttons["Historico"].clicked.connect(lambda: self._trocar_tela(7, "Historico"))
+        self.menu_buttons["Configuracoes"].clicked.connect(lambda: self._trocar_tela(8, "Configuracoes"))
         self.btn_backup.clicked.connect(self.fazer_backup)
         self._configurar_sidebar_retratil()
 
@@ -158,6 +166,13 @@ class MainWindow(QMainWindow):
         if hasattr(self, "maquina_cards") and self.stack.currentIndex() == 0:
             self._reposicionar_maquinas()
 
+    def closeEvent(self, event):
+        try:
+            self._backup_automatico()
+        except Exception:
+            pass
+        super().closeEvent(event)
+
     def _criar_sidebar(self):
         sidebar = QFrame()
         sidebar.setFixedWidth(280)
@@ -210,6 +225,13 @@ class MainWindow(QMainWindow):
             btn = QPushButton(nome)
             btn.setCursor(Qt.PointingHandCursor)
             btn.setStyleSheet(self._sidebar_active_style() if ativo else self._sidebar_button_style())
+            self.menu_buttons[nome] = btn
+            layout.addWidget(btn)
+
+        for nome in ("Historico", "Configuracoes"):
+            btn = QPushButton(nome)
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.setStyleSheet(self._sidebar_button_style())
             self.menu_buttons[nome] = btn
             layout.addWidget(btn)
 
@@ -273,6 +295,16 @@ class MainWindow(QMainWindow):
             with sqlite3.connect(str(destino)) as conn_destino:
                 conn_origem.backup(conn_destino)
 
+    def _backup_automatico(self):
+        db_path = Path(getattr(self.db, "db_path", "data/escola.db")).resolve()
+        destino = db_path.parent.parent / "backups"
+        destino.mkdir(parents=True, exist_ok=True)
+        self._criar_backup(destino)
+        backups = sorted(destino.glob("backup_ipi_manager_*"), key=lambda item: item.stat().st_mtime, reverse=True)
+        for antigo in backups[7:]:
+            if antigo.is_dir():
+                shutil.rmtree(antigo)
+
     def _sidebar_button_style(self):
         return """
             QPushButton {
@@ -327,6 +359,10 @@ class MainWindow(QMainWindow):
             self.financeiro_window.carregar_dados()
         if menu_ativo == "Caixa":
             self.caixa_window.carregar_dados()
+        if menu_ativo == "Historico":
+            self.historico_window.carregar_dados()
+        if menu_ativo == "Configuracoes":
+            self.config_window.carregar_dados()
         if menu_ativo == "Frequência":
             self.frequencia_window.carregar_dados()
         self.stack.setCurrentIndex(index)

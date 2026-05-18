@@ -1,5 +1,7 @@
 from pathlib import Path
 from datetime import datetime
+import csv
+from urllib.parse import quote
 
 from PyQt5.QtWidgets import (
     QWidget,
@@ -21,7 +23,8 @@ from PyQt5.QtWidgets import (
     QListWidget,
     QListWidgetItem,
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtGui import QDesktopServices
 
 from src.database.repositories import AlunoRepository, CaixaRepository, FinanceiroRepository
 from src.services.recibo_service import gerar_recibo_pagamento_pdf
@@ -186,8 +189,20 @@ class FinanceiroWindow(QWidget):
         self._preparar_tabela(self.tbl_pendentes_mes)
         self.tbl_pendentes_mes.cellClicked.connect(self.selecionar_aluno_pendente)
 
+        self.btn_aviso_pendente = QPushButton("Enviar aviso WhatsApp")
+        self.btn_aviso_pendente.clicked.connect(self.enviar_aviso_pendente)
+        self.btn_aviso_pendente.setMinimumHeight(42)
+        self.btn_aviso_pendente.setStyleSheet(self._secondary_button_style())
+
+        self.btn_exportar_pendentes = QPushButton("Exportar pendentes CSV")
+        self.btn_exportar_pendentes.clicked.connect(self.exportar_pendentes_csv)
+        self.btn_exportar_pendentes.setMinimumHeight(42)
+        self.btn_exportar_pendentes.setStyleSheet(self._secondary_button_style())
+
         layout.addWidget(self.lbl_pendentes_mes)
         layout.addWidget(self.tbl_pendentes_mes)
+        layout.addWidget(self.btn_aviso_pendente)
+        layout.addWidget(self.btn_exportar_pendentes)
         return painel
 
     def carregar_dados(self):
@@ -423,6 +438,53 @@ class FinanceiroWindow(QWidget):
 
         self.lbl_pendentes_mes.setText(f"{len(pendentes)} aluno(s) pendente(s) neste mês")
 
+    def enviar_aviso_pendente(self):
+        itens = self.tbl_pendentes_mes.selectedItems()
+        if not itens:
+            QMessageBox.warning(self, "Financeiro", "Selecione um aluno pendente.")
+            return
+
+        row = itens[0].row()
+        item_aluno = self.tbl_pendentes_mes.item(row, 0)
+        aluno_id = item_aluno.data(Qt.UserRole) if item_aluno else None
+        aluno = next((item for item in self.alunos if item.id == aluno_id), None)
+        if not aluno:
+            return
+
+        telefone = self._normalizar_telefone(aluno.whatsapp_aluno or aluno.whatsapp_resp)
+        if not telefone:
+            QMessageBox.warning(self, "Financeiro", "Aluno sem telefone cadastrado.")
+            return
+
+        parcela = self.tbl_pendentes_mes.item(row, 1).text()
+        mensagem = (
+            f"Ola, {aluno.nome}! Identificamos uma pendencia financeira da parcela {parcela} "
+            "na IPI Informatica. Por favor, entre em contato para regularizar."
+        )
+        QDesktopServices.openUrl(QUrl(f"https://wa.me/55{telefone}?text={quote(mensagem)}"))
+
+    def _normalizar_telefone(self, telefone):
+        return "".join(char for char in (telefone or "") if char.isdigit())
+
+    def exportar_pendentes_csv(self):
+        destino, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exportar pendentes",
+            f"pendentes_{datetime.now().strftime('%Y_%m')}.csv",
+            "CSV (*.csv)",
+        )
+        if not destino:
+            return
+        with open(destino, "w", newline="", encoding="utf-8-sig") as arquivo:
+            writer = csv.writer(arquivo, delimiter=";")
+            writer.writerow(["Aluno", "Parcela", "Pagas", "Telefone"])
+            for row in range(self.tbl_pendentes_mes.rowCount()):
+                writer.writerow([
+                    self.tbl_pendentes_mes.item(row, col).text() if self.tbl_pendentes_mes.item(row, col) else ""
+                    for col in range(self.tbl_pendentes_mes.columnCount())
+                ])
+        QMessageBox.information(self, "Financeiro", f"Pendentes exportados:\n{destino}")
+
     def _texto_turma(self, turma_id):
         if not turma_id:
             return "-"
@@ -564,5 +626,22 @@ class FinanceiroWindow(QWidget):
 
             QPushButton:hover {
                 background-color: #15803d;
+            }
+        """
+
+    def _secondary_button_style(self):
+        return """
+            QPushButton {
+                background-color: #e2e8f0;
+                color: #0f172a;
+                border: none;
+                border-radius: 11px;
+                padding: 10px 12px;
+                font-size: 20px;
+                font-weight: 800;
+            }
+
+            QPushButton:hover {
+                background-color: #cbd5e1;
             }
         """

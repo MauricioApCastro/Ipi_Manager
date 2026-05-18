@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QPushButton,
     QLineEdit,
+    QDateEdit,
     QFileDialog,
     QMessageBox,
     QTableWidget,
@@ -18,9 +19,9 @@ from PyQt5.QtWidgets import (
     QListWidget,
     QListWidgetItem,
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QDate
 
-from src.database.repositories import AlunoRepository, CursoRepository
+from src.database.repositories import AlunoRepository, CalendarioRepository, CursoRepository, ReposicaoRepository
 from src.services.diploma_service import gerar_diploma_pdf
 
 
@@ -30,6 +31,8 @@ class FrequenciaWindow(QWidget):
         self.db = db
         self.repo_aluno = AlunoRepository(db)
         self.repo_curso = CursoRepository(db)
+        self.repo_calendario = CalendarioRepository(db)
+        self.repo_reposicao = ReposicaoRepository(db)
         self.alunos = []
         self.alunos_filtrados = []
         self.aluno_selecionado_id = None
@@ -98,11 +101,26 @@ class FrequenciaWindow(QWidget):
         self.btn_diploma.setMinimumHeight(42)
         self.btn_diploma.setStyleSheet(self._primary_button_style())
 
+        linha_reposicao = QHBoxLayout()
+        self.data_reposicao = QDateEdit()
+        self.data_reposicao.setCalendarPopup(True)
+        self.data_reposicao.setDisplayFormat("dd/MM/yyyy")
+        self.data_reposicao.setDate(QDate.currentDate())
+        self._preparar_campo(self.data_reposicao)
+
+        self.btn_reposicao = QPushButton("Agendar reposicao")
+        self.btn_reposicao.clicked.connect(self.agendar_reposicao)
+        self.btn_reposicao.setMinimumHeight(42)
+        self.btn_reposicao.setStyleSheet(self._secondary_button_style())
+        linha_reposicao.addWidget(self.data_reposicao)
+        linha_reposicao.addWidget(self.btn_reposicao)
+
         layout.addWidget(self.txt_busca)
         layout.addWidget(self.lista_alunos)
         layout.addWidget(self.lbl_resumo)
         layout.addWidget(self.lbl_status_diploma)
         layout.addWidget(self.btn_diploma)
+        layout.addLayout(linha_reposicao)
         layout.addStretch()
         return painel
 
@@ -211,6 +229,29 @@ class FrequenciaWindow(QWidget):
         self._preencher_presencas(self._frequencia_aluno(aluno, presencas))
         self._preencher_aulas(aluno, aulas)
 
+    def agendar_reposicao(self):
+        aluno = self.aluno_atual()
+        if not aluno:
+            QMessageBox.warning(self, "Reposicao", "Selecione um aluno.")
+            return
+
+        itens = self.tbl_presencas.selectedItems()
+        if not itens:
+            QMessageBox.warning(self, "Reposicao", "Selecione uma falta na tabela.")
+            return
+
+        row = itens[0].row()
+        status = self.tbl_presencas.item(row, 2).text()
+        if not status.startswith("Falta"):
+            QMessageBox.warning(self, "Reposicao", "Selecione uma linha marcada como falta.")
+            return
+
+        data_falta = self.tbl_presencas.item(row, 0).data(Qt.UserRole)
+        data_reposicao = self.data_reposicao.date().toString("yyyy-MM-dd")
+        self.repo_reposicao.agendar(aluno.id, data_falta, data_reposicao, "Reposicao agendada pela frequencia")
+        self.carregar_aluno_atual()
+        QMessageBox.information(self, "Reposicao", "Reposicao agendada.")
+
     def gerar_diploma(self):
         aluno = self.aluno_atual()
         if not aluno:
@@ -251,6 +292,10 @@ class FrequenciaWindow(QWidget):
             ).fetchall()
 
     def _frequencia_aluno(self, aluno, presencas):
+        reposicoes_por_falta = {
+            row[1]: row
+            for row in self.repo_reposicao.get_aluno(aluno.id)
+        }
         presencas_por_dia = {}
         for data_hora, maquina, _obs in presencas:
             data = self._data_presenca(data_hora)
@@ -277,7 +322,14 @@ class FrequenciaWindow(QWidget):
                     data_hora, maquina = presencas_por_dia[dia]
                     linhas.append((data_hora, maquina, "Presente"))
                 else:
-                    linhas.append((dia.strftime("%Y-%m-%d"), "-", "Falta"))
+                    data_falta = dia.strftime("%Y-%m-%d")
+                    reposicao = reposicoes_por_falta.get(data_falta)
+                    status = "Falta"
+                    if reposicao:
+                        status = "Falta - reposicao " + self._data_para_tela(reposicao[2])
+                        if reposicao[3] == "CONCLUIDA":
+                            status = "Falta - reposicao concluida"
+                    linhas.append((data_falta, "-", status))
             dia -= timedelta(days=1)
 
         dias_listados = {self._data_presenca(data_hora) for data_hora, _maquina, _status in linhas}
@@ -334,7 +386,7 @@ class FrequenciaWindow(QWidget):
         return False
 
     def _eh_feriado(self, dia):
-        return dia in self._feriados_ano(dia.year)
+        return dia in self._feriados_ano(dia.year) or dia.strftime("%Y-%m-%d") in self.repo_calendario.datas_excecao_ano(dia.year)
 
     def _feriados_ano(self, ano):
         pascoa = self._domingo_pascoa(ano)
@@ -401,6 +453,12 @@ class FrequenciaWindow(QWidget):
                 continue
         return None
 
+    def _data_para_tela(self, texto):
+        try:
+            return datetime.strptime(texto or "", "%Y-%m-%d").strftime("%d/%m/%Y")
+        except ValueError:
+            return texto or ""
+
     def _aulas_do_aluno(self, aluno):
         modulos_ids = aluno.modulos_ids or []
         if not modulos_ids:
@@ -450,7 +508,10 @@ class FrequenciaWindow(QWidget):
         self.tbl_presencas.setRowCount(0)
         for row, (data_hora, maquina, status) in enumerate(presencas):
             self.tbl_presencas.insertRow(row)
-            self.tbl_presencas.setItem(row, 0, QTableWidgetItem(self._formatar_data(data_hora)))
+            item_data = QTableWidgetItem(self._formatar_data(data_hora))
+            data = self._data_presenca(data_hora)
+            item_data.setData(Qt.UserRole, data.strftime("%Y-%m-%d") if data else data_hora)
+            self.tbl_presencas.setItem(row, 0, item_data)
             self.tbl_presencas.setItem(row, 1, QTableWidgetItem(maquina or "-"))
             self.tbl_presencas.setItem(row, 2, QTableWidgetItem(status or ""))
 
@@ -592,7 +653,7 @@ class FrequenciaWindow(QWidget):
 
     def _input_style(self):
         return """
-            QLineEdit {
+            QLineEdit, QDateEdit {
                 background-color: #f8fafc;
                 color: #0f172a;
                 border: 1px solid #dbe3ef;
@@ -600,6 +661,23 @@ class FrequenciaWindow(QWidget):
                 padding: 7px 10px;
                 font-size: 20px;
                 font-weight: 600;
+            }
+        """
+
+    def _secondary_button_style(self):
+        return """
+            QPushButton {
+                background-color: #e2e8f0;
+                color: #0f172a;
+                border: none;
+                border-radius: 11px;
+                padding: 10px 12px;
+                font-size: 20px;
+                font-weight: 800;
+            }
+
+            QPushButton:hover {
+                background-color: #cbd5e1;
             }
         """
 

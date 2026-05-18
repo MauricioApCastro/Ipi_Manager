@@ -895,29 +895,36 @@ class CaixaRepository:
                     categoria TEXT NOT NULL,
                     valor REAL NOT NULL DEFAULT 0,
                     status TEXT NOT NULL DEFAULT 'PREVISTO',
+                    tipo TEXT NOT NULL DEFAULT 'ENTRADA',
                     observacoes TEXT
                 )
             """)
+            self._add_column_if_missing(conn, "caixa_entradas", "tipo", "TEXT NOT NULL DEFAULT 'ENTRADA'")
             conn.commit()
 
-    def add_entrada(self, data, descricao, categoria, valor, status, observacoes=""):
+    def _add_column_if_missing(self, conn, tabela, coluna, definicao):
+        colunas = [row[1] for row in conn.execute(f"PRAGMA table_info({tabela})").fetchall()]
+        if coluna not in colunas:
+            conn.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao}")
+
+    def add_entrada(self, data, descricao, categoria, valor, status, observacoes="", tipo="ENTRADA"):
         query = """
-            INSERT INTO caixa_entradas (data, descricao, categoria, valor, status, observacoes)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO caixa_entradas (data, descricao, categoria, valor, status, observacoes, tipo)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """
         with self.db.connection() as conn:
-            cursor = conn.execute(query, (data, descricao, categoria, valor, status, observacoes))
+            cursor = conn.execute(query, (data, descricao, categoria, valor, status, observacoes, tipo))
             conn.commit()
             return cursor.lastrowid
 
-    def update_entrada(self, entrada_id, data, descricao, categoria, valor, status, observacoes=""):
+    def update_entrada(self, entrada_id, data, descricao, categoria, valor, status, observacoes="", tipo="ENTRADA"):
         query = """
             UPDATE caixa_entradas
-            SET data = ?, descricao = ?, categoria = ?, valor = ?, status = ?, observacoes = ?
+            SET data = ?, descricao = ?, categoria = ?, valor = ?, status = ?, observacoes = ?, tipo = ?
             WHERE id = ?
         """
         with self.db.connection() as conn:
-            conn.execute(query, (data, descricao, categoria, valor, status, observacoes, entrada_id))
+            conn.execute(query, (data, descricao, categoria, valor, status, observacoes, tipo, entrada_id))
             conn.commit()
 
     def delete_entrada(self, entrada_id):
@@ -929,7 +936,7 @@ class CaixaRepository:
         inicio = f"{ano:04d}-{mes:02d}-01"
         fim = f"{ano + 1:04d}-01-01" if mes == 12 else f"{ano:04d}-{mes + 1:02d}-01"
         query = """
-            SELECT id, data, descricao, categoria, valor, status, observacoes
+            SELECT id, data, descricao, categoria, valor, status, observacoes, COALESCE(tipo, 'ENTRADA')
             FROM caixa_entradas
             WHERE data >= ? AND data < ?
             ORDER BY data DESC, id DESC
@@ -939,7 +946,111 @@ class CaixaRepository:
 
     def totais_mes(self, ano, mes):
         entradas = self.get_entradas_mes(ano, mes)
-        previsto = sum(row[4] or 0 for row in entradas)
-        recebido = sum(row[4] or 0 for row in entradas if row[5] == "RECEBIDO")
-        pendente = previsto - recebido
-        return previsto, recebido, pendente
+        entradas_previstas = sum(row[4] or 0 for row in entradas if row[7] == "ENTRADA")
+        entradas_recebidas = sum(row[4] or 0 for row in entradas if row[7] == "ENTRADA" and row[5] == "RECEBIDO")
+        saidas_previstas = sum(row[4] or 0 for row in entradas if row[7] == "SAIDA")
+        saidas_pagas = sum(row[4] or 0 for row in entradas if row[7] == "SAIDA" and row[5] == "RECEBIDO")
+        return entradas_previstas, entradas_recebidas, saidas_previstas, saidas_pagas
+
+
+class CalendarioRepository:
+    def __init__(self, db):
+        self.db = db
+        self.ensure_schema()
+
+    def ensure_schema(self):
+        with self.db.connection() as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS calendario_excecoes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    data TEXT NOT NULL UNIQUE,
+                    descricao TEXT NOT NULL,
+                    tipo TEXT NOT NULL DEFAULT 'FERIADO'
+                )
+            """)
+            conn.commit()
+
+    def add_excecao(self, data, descricao, tipo="FERIADO"):
+        with self.db.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO calendario_excecoes (data, descricao, tipo)
+                VALUES (?, ?, ?)
+                ON CONFLICT(data) DO UPDATE SET
+                    descricao = excluded.descricao,
+                    tipo = excluded.tipo
+                """,
+                (data, descricao, tipo),
+            )
+            conn.commit()
+
+    def delete_excecao(self, excecao_id):
+        with self.db.connection() as conn:
+            conn.execute("DELETE FROM calendario_excecoes WHERE id = ?", (excecao_id,))
+            conn.commit()
+
+    def get_excecoes_ano(self, ano):
+        inicio = f"{ano:04d}-01-01"
+        fim = f"{ano + 1:04d}-01-01"
+        with self.db.connection() as conn:
+            return conn.execute(
+                """
+                SELECT id, data, descricao, tipo
+                FROM calendario_excecoes
+                WHERE data >= ? AND data < ?
+                ORDER BY data
+                """,
+                (inicio, fim),
+            ).fetchall()
+
+    def datas_excecao_ano(self, ano):
+        return {row[1] for row in self.get_excecoes_ano(ano)}
+
+
+class ReposicaoRepository:
+    def __init__(self, db):
+        self.db = db
+        self.ensure_schema()
+
+    def ensure_schema(self):
+        with self.db.connection() as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS reposicoes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    aluno_id INTEGER NOT NULL,
+                    data_falta TEXT NOT NULL,
+                    data_reposicao TEXT,
+                    status TEXT NOT NULL DEFAULT 'PENDENTE',
+                    observacoes TEXT,
+                    FOREIGN KEY (aluno_id) REFERENCES alunos(id)
+                )
+            """)
+            conn.commit()
+
+    def agendar(self, aluno_id, data_falta, data_reposicao, observacoes=""):
+        with self.db.connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO reposicoes (aluno_id, data_falta, data_reposicao, status, observacoes)
+                VALUES (?, ?, ?, 'PENDENTE', ?)
+                """,
+                (aluno_id, data_falta, data_reposicao, observacoes),
+            )
+            conn.commit()
+
+    def concluir(self, reposicao_id):
+        with self.db.connection() as conn:
+            conn.execute("UPDATE reposicoes SET status = 'CONCLUIDA' WHERE id = ?", (reposicao_id,))
+            conn.commit()
+
+    def get_aluno(self, aluno_id):
+        with self.db.connection() as conn:
+            return conn.execute(
+                """
+                SELECT id, data_falta, data_reposicao, status, observacoes
+                FROM reposicoes
+                WHERE aluno_id = ?
+                ORDER BY COALESCE(data_reposicao, data_falta) DESC, id DESC
+                """,
+                (aluno_id,),
+            ).fetchall()
