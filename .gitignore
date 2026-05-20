@@ -7,3 +7,5 @@ build/
 dist/
 recibos/
 *.spec
+pacote_cliente_IPI_Manager_*/
+pacote_cliente_IPI_Manager_*.zip

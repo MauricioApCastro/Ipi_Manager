@@ -1,85 +1,81 @@
-# Instalacao e teste em outra maquina
+# Instalacao no computador do cliente
 
-Este guia mostra como preparar uma maquina Windows para testar o IPI Manager.
+Este pacote instala o IPI Manager em um computador Windows sem precisar instalar Python.
 
-## Opcao recomendada: levar o executavel
+## Arquivos do pacote
 
-Se voce gerar o executavel antes, a maquina da cliente nao precisa instalar Python nem dependencias.
+- `IPI_Manager.exe`: programa principal.
+- `MANUAL_PROFESSORA.md`: manual de uso.
+- `INSTALACAO_CLIENTE.md`: este guia.
+- `INSTALAR_CLIENTE.bat`: instalador simples.
 
-Na sua maquina de desenvolvimento:
+## Como instalar
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
-.\.venv\Scripts\pyinstaller.exe IPI_Manager.spec
-```
+### Opcao mais simples
 
-Depois copie para a maquina cliente:
+1. Extraia o `.zip` em qualquer pasta.
+2. Clique duas vezes em `INSTALAR_CLIENTE.bat`.
+3. Aguarde a mensagem `Instalacao concluida`.
+4. Abra pelo atalho `IPI Manager` criado na Area de Trabalho.
 
-- `dist\IPI_Manager.exe`
-- pasta `data`, se quiser levar um banco ja preenchido
-- pasta `recibos`, se quiser levar recibos/diplomas ja gerados
+### Opcao manual
 
-Se quiser comecar vazio, leve somente o executavel. O sistema cria a pasta `data` automaticamente.
+1. Crie uma pasta no computador do cliente, por exemplo:
+   `C:\IPI_Manager`
+2. Copie `IPI_Manager.exe` para essa pasta.
+3. Abra o programa com dois cliques em `IPI_Manager.exe`.
+4. Se o Windows mostrar aviso de seguranca, clique em `Mais informacoes` e depois em `Executar assim mesmo`.
 
-## Opcao para rodar pelo codigo-fonte
+Na primeira abertura, o sistema cria automaticamente:
 
-Instale na maquina cliente:
+- `data`: banco de dados.
+- `recibos`: recibos e diplomas gerados.
+- `backups`: backups automaticos locais.
 
-1. Python 3.10 ou superior.
-2. Git, se for baixar pelo GitHub.
-3. Dependencias do projeto.
+## Backup automatico
 
-Comandos no PowerShell:
+O sistema faz backup automatico todo dia ao meio-dia, desde que esteja aberto.
 
-```powershell
-git clone https://github.com/MauricioApCastro/Ipi_Manager
-cd Ipi_Manager
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe main.py
-```
+Ele salva:
 
-## Dependencias do sistema
+1. No proprio computador, na pasta `backups`.
+2. Em uma pasta da nuvem configurada em `Configuracoes > Backup automatico`.
 
-Para rodar pelo codigo-fonte:
+Para configurar a nuvem:
 
-- Python 3.10+
-- PyQt5
-- PyQt5-Qt5
-- PyQt5_sip
+1. Instale ou abra o OneDrive, Google Drive ou Dropbox no computador do cliente.
+2. Crie uma pasta sincronizada, por exemplo:
+   `C:\Users\Cliente\OneDrive\Backup IPI`
+3. No sistema, abra `Configuracoes`.
+4. Em `Backup automatico`, clique em `Escolher pasta`.
+5. Selecione a pasta da nuvem e salve.
 
-Para gerar executavel:
+O sistema mantem os 7 backups mais recentes em cada destino.
 
-- PyInstaller
+## Backup manual
 
-Os pacotes Python estao em:
+No menu lateral, clique em `Backup` e escolha uma pasta.
 
-- `requirements.txt`
-- `requirements-build.txt`
+## Migrar dados de outro computador
 
-## Pastas importantes
+Para levar dados existentes:
 
-O sistema usa estas pastas:
+1. Feche o sistema nos dois computadores.
+2. Copie a pasta `data` do computador antigo.
+3. Cole ao lado de `IPI_Manager.exe` no computador novo.
+4. Se quiser levar recibos e diplomas, copie tambem a pasta `recibos`.
 
-- `data`: banco de dados SQLite.
-- `recibos`: recibos e diplomas em PDF.
-- `backups`: backups automaticos.
-
-## Antes de testar com a professora
+## Teste rapido apos instalar
 
 1. Abra o sistema.
-2. Cadastre uma turma.
-3. Cadastre um curso ou gere o cronograma principal.
-4. Cadastre um aluno.
-5. Aloque o aluno em uma maquina.
-6. Registre pagamento no Financeiro.
-7. Confira se a entrada apareceu no Caixa.
-8. Gere um backup manual.
+2. Entre em `Alunos` e cadastre um aluno.
+3. Entre em `Financeiro`, registre um pagamento e gere o recibo.
+4. Confira se a entrada apareceu em `Caixa`.
+5. Entre em `Configuracoes` e configure a pasta de backup da nuvem.
+6. Clique em `Backup` para testar o backup manual.
 
 ## Observacoes
 
-- O backup manual fica no local escolhido.
-- O backup automatico e feito ao fechar o sistema.
-- Para levar dados reais para outro computador, copie tambem a pasta `data`.
-- Para levar recibos e diplomas ja gerados, copie tambem a pasta `recibos`.
+- Nao apague as pastas `data`, `recibos` e `backups`.
+- O recibo abre o WhatsApp do responsavel com a mensagem pronta, mas o PDF precisa ser anexado manualmente.
+- Se a pasta da nuvem nao estiver sincronizando, verifique o OneDrive/Google Drive/Dropbox do Windows.
