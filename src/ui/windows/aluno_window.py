@@ -150,9 +150,6 @@ class AlunoWindow(QWidget):
 
         self.txt_nome = self._line_edit("Nome completo")
 
-        self.txt_cpf = self._line_edit("000.000.000-00")
-        self.txt_cpf.setInputMask("000.000.000-00;_")
-
         self.txt_nascimento = self._line_edit("dd/mm/aaaa")
         self.txt_nascimento.setInputMask("00/00/0000;_")
 
@@ -204,8 +201,6 @@ class AlunoWindow(QWidget):
         botoes.addWidget(self.btn_excluir, 1)
 
         layout.addWidget(self.txt_nome)
-        layout.addWidget(self._label_campo("CPF do aluno"))
-        layout.addWidget(self.txt_cpf)
         layout.addWidget(self._label_campo("Data de nascimento"))
         layout.addWidget(self.txt_nascimento)
         layout.addWidget(self._label_campo("Telefone do aluno"))
@@ -300,14 +295,13 @@ class AlunoWindow(QWidget):
         painel = self._painel_base("Lista de alunos", "#7c3aed", "#f5f3ff")
         layout = painel.layout()
 
-        self.tbl_alunos = QTableWidget(0, 10)
+        self.tbl_alunos = QTableWidget(0, 9)
         self.tbl_alunos.setHorizontalHeaderLabels([
             "Nome",
             "Turma",
             "Pagamento",
             "Tel. aluno",
             "Status",
-            "CPF",
             "Nasc.",
             "Tel. resp.",
             "Módulo",
@@ -387,11 +381,10 @@ class AlunoWindow(QWidget):
             self.tbl_alunos.setItem(row, 2, QTableWidgetItem(data_pagamento))
             self.tbl_alunos.setItem(row, 3, QTableWidgetItem(aluno.whatsapp_aluno or ""))
             self.tbl_alunos.setItem(row, 4, QTableWidgetItem(status))
-            self.tbl_alunos.setItem(row, 5, QTableWidgetItem(aluno.cpf or ""))
-            self.tbl_alunos.setItem(row, 6, QTableWidgetItem(aluno.nascimento or ""))
-            self.tbl_alunos.setItem(row, 7, QTableWidgetItem(aluno.whatsapp_resp or ""))
-            self.tbl_alunos.setItem(row, 8, QTableWidgetItem(aluno.modulo_atual or ""))
-            self.tbl_alunos.setItem(row, 9, QTableWidgetItem(str(aluno.licao_atual or 1)))
+            self.tbl_alunos.setItem(row, 5, QTableWidgetItem(aluno.nascimento or ""))
+            self.tbl_alunos.setItem(row, 6, QTableWidgetItem(aluno.whatsapp_resp or ""))
+            self.tbl_alunos.setItem(row, 7, QTableWidgetItem(aluno.modulo_atual or ""))
+            self.tbl_alunos.setItem(row, 8, QTableWidgetItem(str(aluno.licao_atual or 1)))
 
         self.tbl_alunos.blockSignals(False)
 
@@ -404,7 +397,6 @@ class AlunoWindow(QWidget):
         filtrados = [
             aluno for aluno in self.alunos
             if termo in (aluno.nome or "").lower()
-            or termo in (aluno.cpf or "").lower()
             or termo in (aluno.modulo_atual or "").lower()
         ]
         self.preencher_tabela(filtrados)
@@ -418,7 +410,6 @@ class AlunoWindow(QWidget):
 
         self.aluno_em_edicao_id = aluno.id
         self.txt_nome.setText(aluno.nome or "")
-        self.txt_cpf.setText(aluno.cpf or "")
         self.txt_nascimento.setText(aluno.nascimento or "")
         self._definir_data_pagamento(self.repo_financeiro.get_config(aluno.id)["data_primeiro_pagamento"])
         self.txt_whatsapp.setText(aluno.whatsapp_aluno or "")
@@ -444,23 +435,6 @@ class AlunoWindow(QWidget):
             self.repo.update(aluno)
             self._salvar_data_pagamento(aluno.id)
         else:
-            existente = self._aluno_por_cpf(aluno.cpf)
-            if existente:
-                resposta = QMessageBox.question(
-                    self,
-                    "Aluno existente",
-                    f"Já existe um aluno com o CPF {aluno.cpf}. Deseja atualizar esse cadastro?",
-                    QMessageBox.Yes | QMessageBox.No,
-                )
-                if resposta != QMessageBox.Yes:
-                    return
-                aluno.id = existente.id
-                if not self._turma_tem_vaga_para_aluno(aluno):
-                    return
-                self.repo.update(aluno)
-                self._salvar_data_pagamento(aluno.id)
-                self.carregar_dados()
-                return
             if not self._turma_tem_vaga_para_aluno(aluno):
                 return
             self.repo.add(aluno)
@@ -503,7 +477,6 @@ class AlunoWindow(QWidget):
     def limpar_form(self):
         self.aluno_em_edicao_id = None
         self.txt_nome.clear()
-        self.txt_cpf.clear()
         self.txt_nascimento.clear()
         self._limpar_data_pagamento()
         self.txt_whatsapp.clear()
@@ -523,11 +496,6 @@ class AlunoWindow(QWidget):
         nome = self.txt_nome.text().strip()
         if not nome:
             QMessageBox.warning(self, "Aluno", "Informe o nome do aluno.")
-            return None
-
-        cpf = self.txt_cpf.text().strip()
-        if not self._cpf_valido(cpf):
-            QMessageBox.warning(self, "CPF", "Informe um CPF válido.")
             return None
 
         nascimento = self.txt_nascimento.text().strip()
@@ -559,7 +527,7 @@ class AlunoWindow(QWidget):
             nome,
             self.txt_whatsapp.text().strip(),
             self.txt_whatsapp_resp.text().strip(),
-            cpf,
+            "",
             nascimento,
         )
         aluno.licao_atual = 1
@@ -568,14 +536,6 @@ class AlunoWindow(QWidget):
         aluno.turma_id = self.combo_turma.currentData()
         aluno.observacoes = self.txt_obs.toPlainText().strip()
         return aluno
-
-    def _aluno_por_cpf(self, cpf):
-        cpf_limpo = "".join(char for char in (cpf or "") if char.isdigit())
-        for aluno in self.repo.get_all():
-            aluno_cpf = "".join(char for char in (aluno.cpf or "") if char.isdigit())
-            if aluno_cpf and aluno_cpf == cpf_limpo:
-                return aluno
-        return None
 
     def _data_pagamento_texto(self, aluno_id):
         if not aluno_id:
@@ -719,21 +679,6 @@ class AlunoWindow(QWidget):
         QMessageBox.warning(self, "Turma", "Selecione uma turma válida.")
         return False
 
-    def _cpf_valido(self, cpf):
-        numeros = [int(char) for char in cpf if char.isdigit()]
-        if len(numeros) != 11 or len(set(numeros)) == 1:
-            return False
-
-        soma = sum(numeros[i] * (10 - i) for i in range(9))
-        digito1 = (soma * 10) % 11
-        digito1 = 0 if digito1 == 10 else digito1
-
-        soma = sum(numeros[i] * (11 - i) for i in range(10))
-        digito2 = (soma * 10) % 11
-        digito2 = 0 if digito2 == 10 else digito2
-
-        return numeros[9] == digito1 and numeros[10] == digito2
-
     def _texto_turma(self, turma_id):
         if not turma_id:
             return "-"
@@ -834,7 +779,7 @@ class AlunoWindow(QWidget):
         tabela.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         tabela.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         tabela.horizontalHeader().setMinimumSectionSize(72)
-        larguras = (170, 285, 112, 120, 100, 110, 88, 120, 145, 72)
+        larguras = (170, 285, 112, 120, 100, 88, 120, 145, 72)
         for coluna, largura in enumerate(larguras):
             tabela.setColumnWidth(coluna, largura)
         tabela.setColumnWidth(1, 290)

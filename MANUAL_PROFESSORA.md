@@ -43,7 +43,7 @@ Use esta tela para cadastrar, editar e excluir alunos.
 
 ### Cadastrar aluno
 
-1. Preencha nome, CPF, nascimento e telefones.
+1. Preencha nome, nascimento e telefones.
 2. Escolha a data do primeiro pagamento no calendario.
 3. Selecione turma e modulos do aluno.
 4. Clique em `Matricular`.
@@ -243,4 +243,3 @@ Ao fechar o sistema, ele tambem faz um backup automatico na pasta `backups`.
 2. Exportar pendentes.
 3. Fazer backup manual.
 4. Conferir saldo do mes.
-

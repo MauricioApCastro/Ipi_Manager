@@ -3,16 +3,18 @@ from datetime import datetime
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel, QPushButton, QLineEdit,
     QSpinBox, QDateEdit, QComboBox, QMessageBox, QTableWidget, QTableWidgetItem,
-    QHeaderView,
+    QHeaderView, QFileDialog,
 )
 from PyQt5.QtCore import Qt, QDate
 
 from src.database.repositories import CalendarioRepository
+from src.services.app_config import definir_config, obter_config
 
 
 class ConfigWindow(QWidget):
     def __init__(self, db):
         super().__init__()
+        self.db = db
         self.repo_calendario = CalendarioRepository(db)
         self.setup_ui()
         self.carregar_dados()
@@ -25,6 +27,29 @@ class ConfigWindow(QWidget):
         titulo = QLabel("Configuracoes")
         titulo.setStyleSheet("color: #0f172a; font-size: 42px; font-weight: 900;")
         layout.addWidget(titulo)
+
+        painel_backup = self._painel_base("Backup automatico")
+        backup_layout = painel_backup.layout()
+
+        linha_backup = QHBoxLayout()
+        self.txt_backup_nuvem = self._line_edit("Pasta da nuvem")
+        self.btn_escolher_backup = QPushButton("Escolher pasta")
+        self.btn_escolher_backup.clicked.connect(self.escolher_pasta_backup)
+        self.btn_escolher_backup.setStyleSheet(self._primary_button_style())
+        self.btn_salvar_backup = QPushButton("Salvar")
+        self.btn_salvar_backup.clicked.connect(self.salvar_pasta_backup)
+        self.btn_salvar_backup.setStyleSheet(self._primary_button_style())
+        linha_backup.addWidget(self.txt_backup_nuvem, 1)
+        linha_backup.addWidget(self.btn_escolher_backup)
+        linha_backup.addWidget(self.btn_salvar_backup)
+
+        self.lbl_backup_info = QLabel("Ao meio-dia, o sistema salva backup no PC e nesta pasta da nuvem.")
+        self.lbl_backup_info.setWordWrap(True)
+        self.lbl_backup_info.setStyleSheet("color: #64748b; font-size: 18px; font-weight: 700; border: none;")
+
+        backup_layout.addLayout(linha_backup)
+        backup_layout.addWidget(self.lbl_backup_info)
+        layout.addWidget(painel_backup)
 
         painel = self._painel_base("Feriados, recessos e aulas canceladas")
         form = painel.layout()
@@ -78,6 +103,7 @@ class ConfigWindow(QWidget):
     def carregar_dados(self):
         if not hasattr(self, "tbl_excecoes"):
             return
+        self.txt_backup_nuvem.setText(obter_config(self.db, "backup_nuvem_path", ""))
         excecoes = self.repo_calendario.get_excecoes_ano(self.spin_ano.value())
         self.tbl_excecoes.setRowCount(0)
         for row, (excecao_id, data, descricao, tipo) in enumerate(excecoes):
@@ -87,6 +113,21 @@ class ConfigWindow(QWidget):
             self.tbl_excecoes.setItem(row, 0, item_data)
             self.tbl_excecoes.setItem(row, 1, QTableWidgetItem(tipo or ""))
             self.tbl_excecoes.setItem(row, 2, QTableWidgetItem(descricao or ""))
+
+    def escolher_pasta_backup(self):
+        pasta = QFileDialog.getExistingDirectory(
+            self,
+            "Escolher pasta da nuvem para backup",
+            self.txt_backup_nuvem.text().strip() or "",
+        )
+        if not pasta:
+            return
+        self.txt_backup_nuvem.setText(pasta)
+        self.salvar_pasta_backup()
+
+    def salvar_pasta_backup(self):
+        definir_config(self.db, "backup_nuvem_path", self.txt_backup_nuvem.text().strip())
+        QMessageBox.information(self, "Backup", "Pasta da nuvem salva.")
 
     def salvar_excecao(self):
         descricao = self.txt_descricao.text().strip()

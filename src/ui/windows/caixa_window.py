@@ -13,8 +13,7 @@ from src.database.repositories import CaixaRepository
 
 class CaixaWindow(QWidget):
     CATEGORIAS_ENTRADA = ["Matricula", "Mensalidade", "Croche", "Tarot", "Filhos", "Outros"]
-    CATEGORIAS_SAIDA = ["Aluguel", "Energia", "Internet", "Material", "Manutencao", "Retirada", "Outros"]
-    STATUS = [("Previsto", "PREVISTO"), ("Recebido/Pago", "RECEBIDO")]
+    STATUS = [("Previsto", "PREVISTO"), ("Recebido", "RECEBIDO")]
 
     def __init__(self, db):
         super().__init__()
@@ -30,7 +29,7 @@ class CaixaWindow(QWidget):
 
         titulo = QLabel("Caixa")
         titulo.setStyleSheet("color: #0f172a; font-size: 42px; font-weight: 900;")
-        subtitulo = QLabel("Controle entradas, saidas e saldo do mes.")
+        subtitulo = QLabel("Controle as entradas e recebimentos do mes.")
         subtitulo.setWordWrap(True)
         subtitulo.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
         layout.addWidget(titulo)
@@ -54,12 +53,6 @@ class CaixaWindow(QWidget):
         self.data_entrada.setDisplayFormat("dd/MM/yyyy")
         self.data_entrada.setDate(QDate.currentDate())
         self._preparar_campo(self.data_entrada)
-
-        self.combo_tipo = QComboBox()
-        self.combo_tipo.addItem("Entrada", "ENTRADA")
-        self.combo_tipo.addItem("Saida", "SAIDA")
-        self.combo_tipo.currentIndexChanged.connect(self.atualizar_tipo_movimento)
-        self._preparar_campo(self.combo_tipo)
 
         self.txt_descricao = self._line_edit("Descricao")
 
@@ -110,7 +103,6 @@ class CaixaWindow(QWidget):
         botoes.addWidget(self.btn_limpar, 1, 1)
 
         layout.addWidget(self.data_entrada)
-        layout.addWidget(self.combo_tipo)
         layout.addWidget(self.txt_descricao)
         layout.addWidget(self.combo_categoria)
         layout.addWidget(self.combo_status)
@@ -139,16 +131,9 @@ class CaixaWindow(QWidget):
         self.spin_ano.valueChanged.connect(self.carregar_dados)
         self._preparar_campo(self.spin_ano)
 
-        self.combo_filtro_tipo = QComboBox()
-        self.combo_filtro_tipo.addItem("Entradas e saidas", None)
-        self.combo_filtro_tipo.addItem("Entradas", "ENTRADA")
-        self.combo_filtro_tipo.addItem("Saidas", "SAIDA")
-        self.combo_filtro_tipo.currentIndexChanged.connect(self.carregar_dados)
-        self._preparar_campo(self.combo_filtro_tipo)
-
         self.combo_filtro_categoria = QComboBox()
-        self.combo_filtro_categoria.addItem("Todos os tipos", None)
-        for categoria in sorted(set(self.CATEGORIAS_ENTRADA + self.CATEGORIAS_SAIDA)):
+        self.combo_filtro_categoria.addItem("Todas as categorias", None)
+        for categoria in self.CATEGORIAS_ENTRADA:
             self.combo_filtro_categoria.addItem(categoria, categoria)
         self.combo_filtro_categoria.currentIndexChanged.connect(self.carregar_dados)
         self._preparar_campo(self.combo_filtro_categoria)
@@ -160,22 +145,19 @@ class CaixaWindow(QWidget):
 
         filtros.addWidget(self.spin_mes)
         filtros.addWidget(self.spin_ano)
-        filtros.addWidget(self.combo_filtro_tipo)
         filtros.addWidget(self.combo_filtro_categoria)
         filtros.addWidget(self.btn_exportar)
 
         cards = QHBoxLayout()
         self.card_previsto = self._card_total("Entradas", "R$ 0,00")
         self.card_recebido = self._card_total("Recebido", "R$ 0,00")
-        self.card_saidas = self._card_total("Saidas", "R$ 0,00")
         self.card_saldo = self._card_total("Saldo", "R$ 0,00")
         cards.addWidget(self.card_previsto)
         cards.addWidget(self.card_recebido)
-        cards.addWidget(self.card_saidas)
         cards.addWidget(self.card_saldo)
 
-        self.tbl_entradas = QTableWidget(0, 7)
-        self.tbl_entradas.setHorizontalHeaderLabels(["Data", "Tipo", "Descricao", "Categoria", "Valor", "Status", "Obs."])
+        self.tbl_entradas = QTableWidget(0, 5)
+        self.tbl_entradas.setHorizontalHeaderLabels(["Data", "Descricao", "Categoria", "Valor", "Status"])
         self.tbl_entradas.itemSelectionChanged.connect(self.carregar_entrada_selecionada)
         self._preparar_tabela(self.tbl_entradas)
 
@@ -188,10 +170,10 @@ class CaixaWindow(QWidget):
         if not hasattr(self, "tbl_entradas"):
             return
 
-        entradas = self.repo.get_entradas_mes(self.spin_ano.value(), self.spin_mes.value())
-        tipo_filtro = self.combo_filtro_tipo.currentData()
-        if tipo_filtro:
-            entradas = [entrada for entrada in entradas if entrada[7] == tipo_filtro]
+        entradas = [
+            entrada for entrada in self.repo.get_entradas_mes(self.spin_ano.value(), self.spin_mes.value())
+            if entrada[7] == "ENTRADA"
+        ]
         categoria_filtro = self.combo_filtro_categoria.currentData()
         if categoria_filtro:
             entradas = [entrada for entrada in entradas if entrada[3] == categoria_filtro]
@@ -204,12 +186,10 @@ class CaixaWindow(QWidget):
             item_data = QTableWidgetItem(self._data_para_tela(data))
             item_data.setData(Qt.UserRole, entrada_id)
             self.tbl_entradas.setItem(row, 0, item_data)
-            self.tbl_entradas.setItem(row, 1, QTableWidgetItem(self._texto_tipo(tipo)))
-            self.tbl_entradas.setItem(row, 2, QTableWidgetItem(descricao or ""))
-            self.tbl_entradas.setItem(row, 3, QTableWidgetItem(categoria or ""))
-            self.tbl_entradas.setItem(row, 4, QTableWidgetItem(self._formatar_moeda(valor)))
-            self.tbl_entradas.setItem(row, 5, QTableWidgetItem(self._texto_status(status, tipo)))
-            self.tbl_entradas.setItem(row, 6, QTableWidgetItem(observacoes or ""))
+            self.tbl_entradas.setItem(row, 1, QTableWidgetItem(descricao or ""))
+            self.tbl_entradas.setItem(row, 2, QTableWidgetItem(categoria or ""))
+            self.tbl_entradas.setItem(row, 3, QTableWidgetItem(self._formatar_moeda(valor)))
+            self.tbl_entradas.setItem(row, 4, QTableWidgetItem(self._texto_status(status)))
         self.tbl_entradas.blockSignals(False)
         self._atualizar_totais(entradas)
 
@@ -253,22 +233,18 @@ class CaixaWindow(QWidget):
 
         self.entrada_selecionada_id = entrada[0]
         self.data_entrada.setDate(self._data_qdate(entrada[1]))
-        self.combo_tipo.blockSignals(True)
-        self.combo_tipo.setCurrentIndex(self.combo_tipo.findData(entrada[7] or "ENTRADA"))
-        self.combo_tipo.blockSignals(False)
-        self._recarregar_categorias(entrada[7] or "ENTRADA", entrada[3])
+        self._recarregar_categorias(entrada[3])
         self.txt_descricao.setText(entrada[2] or "")
         self.spin_valor.setValue(entrada[4] or 0)
         index_status = self.combo_status.findData(entrada[5] or "PREVISTO")
         self.combo_status.setCurrentIndex(index_status if index_status >= 0 else 0)
         self.txt_observacoes.setText(entrada[6] or "")
-        self.btn_recebido.setText("Marcar pago" if entrada[7] == "SAIDA" else "Marcar recebido")
+        self.btn_recebido.setText("Marcar recebido")
 
     def limpar_form(self):
         self.entrada_selecionada_id = None
         self.data_entrada.setDate(QDate.currentDate())
-        self.combo_tipo.setCurrentIndex(0)
-        self._recarregar_categorias("ENTRADA")
+        self._recarregar_categorias()
         self.txt_descricao.clear()
         self.combo_status.setCurrentIndex(0)
         self.spin_valor.setValue(0)
@@ -287,18 +263,11 @@ class CaixaWindow(QWidget):
         self.tbl_entradas.clearSelection()
         self.combo_categoria.setCurrentText(categoria)
 
-    def atualizar_tipo_movimento(self):
-        tipo = self.combo_tipo.currentData()
-        self._recarregar_categorias(tipo)
-        self.limpar_campos_ao_trocar_categoria()
-        self.btn_recebido.setText("Marcar pago" if tipo == "SAIDA" else "Marcar recebido")
-
-    def _recarregar_categorias(self, tipo, categoria_atual=None):
-        categorias = self.CATEGORIAS_SAIDA if tipo == "SAIDA" else self.CATEGORIAS_ENTRADA
+    def _recarregar_categorias(self, categoria_atual=None):
         self.combo_categoria.blockSignals(True)
         self.combo_categoria.clear()
-        self.combo_categoria.addItems(categorias)
-        if categoria_atual and categoria_atual in categorias:
+        self.combo_categoria.addItems(self.CATEGORIAS_ENTRADA)
+        if categoria_atual and categoria_atual in self.CATEGORIAS_ENTRADA:
             self.combo_categoria.setCurrentText(categoria_atual)
         self.combo_categoria.blockSignals(False)
 
@@ -318,17 +287,15 @@ class CaixaWindow(QWidget):
             valor,
             self.combo_status.currentData(),
             self.txt_observacoes.text().strip(),
-            self.combo_tipo.currentData(),
+            "ENTRADA",
         )
 
     def _atualizar_totais(self, entradas):
-        entradas_total = sum(row[4] or 0 for row in entradas if row[7] == "ENTRADA")
-        recebido = sum(row[4] or 0 for row in entradas if row[7] == "ENTRADA" and row[5] == "RECEBIDO")
-        saidas = sum(row[4] or 0 for row in entradas if row[7] == "SAIDA" and row[5] == "RECEBIDO")
-        saldo = recebido - saidas
+        entradas_total = sum(row[4] or 0 for row in entradas)
+        recebido = sum(row[4] or 0 for row in entradas if row[5] == "RECEBIDO")
+        saldo = recebido
         self.card_previsto.findChild(QLabel, "valor").setText(self._formatar_moeda(entradas_total))
         self.card_recebido.findChild(QLabel, "valor").setText(self._formatar_moeda(recebido))
-        self.card_saidas.findChild(QLabel, "valor").setText(self._formatar_moeda(saidas))
         self.card_saldo.findChild(QLabel, "valor").setText(self._formatar_moeda(saldo))
 
     def exportar_csv(self):
@@ -339,7 +306,7 @@ class CaixaWindow(QWidget):
             return
         with open(destino, "w", newline="", encoding="utf-8-sig") as arquivo:
             writer = csv.writer(arquivo, delimiter=";")
-            writer.writerow(["Data", "Tipo", "Descricao", "Categoria", "Valor", "Status", "Observacoes"])
+            writer.writerow(["Data", "Descricao", "Categoria", "Valor", "Status"])
             for row in range(self.tbl_entradas.rowCount()):
                 writer.writerow([
                     self.tbl_entradas.item(row, col).text() if self.tbl_entradas.item(row, col) else ""
@@ -360,13 +327,10 @@ class CaixaWindow(QWidget):
         except ValueError:
             return texto or ""
 
-    def _texto_status(self, status, tipo="ENTRADA"):
+    def _texto_status(self, status):
         if status == "RECEBIDO":
-            return "Pago" if tipo == "SAIDA" else "Recebido"
+            return "Recebido"
         return "Previsto"
-
-    def _texto_tipo(self, tipo):
-        return "Saida" if tipo == "SAIDA" else "Entrada"
 
     def _formatar_moeda(self, valor):
         return f"R$ {float(valor or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")

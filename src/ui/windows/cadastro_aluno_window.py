@@ -24,7 +24,6 @@ class CadastroAlunoWindow(QDialog):
 
         # Campos de Texto Estilizados
         self.txt_nome = self._criar_input("Nome Completo")
-        self.txt_cpf = self._criar_input("000.000.000-00")
         self.txt_whatsapp = self._criar_input("(11) 90000-0000")
         self.txt_whatsapp_resp = self._criar_input("(11) 90000-0000 (Obrigatório para menores)")
         
@@ -38,7 +37,6 @@ class CadastroAlunoWindow(QDialog):
 
         form.addRow("Nome:", self.txt_nome)
         form.addRow("Nascimento:", self.date_nascimento)
-        form.addRow("CPF:", self.txt_cpf)
         form.addRow("WhatsApp Aluno:", self.txt_whatsapp)
         form.addRow("WhatsApp Resp.:", self.txt_whatsapp_resp)
 
@@ -78,7 +76,7 @@ class CadastroAlunoWindow(QDialog):
         return {
             "nome": self.txt_nome.text(),
             "nascimento": self.date_nascimento.date().toString("dd/MM/yyyy"),
-            "cpf": self.txt_cpf.text(),
+            "cpf": "",
             "whatsapp_aluno": self.txt_whatsapp.text(),
             "whatsapp_resp": self.txt_whatsapp_resp.text(),
             "modulo_atual": "Introdução" # Padrão inicial

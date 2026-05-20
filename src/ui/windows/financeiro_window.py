@@ -14,6 +14,8 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QSpinBox,
     QDoubleSpinBox,
+    QTextEdit,
+    QCheckBox,
     QFileDialog,
     QMessageBox,
     QTableWidget,
@@ -40,6 +42,7 @@ class FinanceiroWindow(QWidget):
         self.alunos_filtrados = []
         self.aluno_selecionado_id = None
         self.carregando_config = False
+        self.ultimo_recibo_gerado = None
         self.setup_ui()
         self.carregar_dados()
 
@@ -50,7 +53,7 @@ class FinanceiroWindow(QWidget):
 
         titulo = QLabel("Financeiro")
         titulo.setStyleSheet("color: #0f172a; font-size: 42px; font-weight: 900;")
-        subtitulo = QLabel("Gere recibos em planilha para enviar ao aluno.")
+        subtitulo = QLabel("Gere recibos e envie pelo WhatsApp do responsavel.")
         subtitulo.setWordWrap(True)
         subtitulo.setStyleSheet("color: #64748b; font-size: 20px; font-weight: 600;")
         layout.addWidget(titulo)
@@ -112,6 +115,10 @@ class FinanceiroWindow(QWidget):
         linha_valores.addWidget(self.spin_valor)
         linha_valores.addWidget(self.spin_valor_atraso)
 
+        self.chk_aplicar_multa = QCheckBox("Aplicar multa")
+        self.chk_aplicar_multa.stateChanged.connect(self.atualizar_preview)
+        self.chk_aplicar_multa.setStyleSheet(self._checkbox_style())
+
         self.spin_pagas = QSpinBox()
         self.spin_pagas.setRange(0, 14)
         self.spin_pagas.setPrefix("Parcelas pagas ")
@@ -120,6 +127,11 @@ class FinanceiroWindow(QWidget):
 
         self.txt_pix = self._line_edit("PIX")
         self.txt_pix.setText("1196321-6999")
+
+        self.txt_observacoes_recibo = QTextEdit()
+        self.txt_observacoes_recibo.setPlaceholderText("Observacoes do recibo")
+        self.txt_observacoes_recibo.setFixedHeight(78)
+        self.txt_observacoes_recibo.setStyleSheet(self._text_edit_style())
 
         self.lbl_pendentes = QLabel("")
         self.lbl_pendentes.setWordWrap(True)
@@ -138,7 +150,7 @@ class FinanceiroWindow(QWidget):
         self.btn_registrar.setMinimumHeight(42)
         self.btn_registrar.setStyleSheet(self._success_button_style())
 
-        self.btn_gerar = QPushButton("Gerar recibo em PDF")
+        self.btn_gerar = QPushButton("Gerar recibo e abrir WhatsApp")
         self.btn_gerar.clicked.connect(self.gerar_recibo)
         self.btn_gerar.setMinimumHeight(42)
         self.btn_gerar.setStyleSheet(self._primary_button_style())
@@ -147,8 +159,10 @@ class FinanceiroWindow(QWidget):
         layout.addWidget(self.lista_alunos)
         layout.addLayout(linha_data)
         layout.addLayout(linha_valores)
+        layout.addWidget(self.chk_aplicar_multa)
         layout.addWidget(self.spin_pagas)
         layout.addWidget(self.txt_pix)
+        layout.addWidget(self.txt_observacoes_recibo)
         layout.addWidget(self.lbl_pendentes)
         layout.addWidget(self.btn_registrar)
         layout.addWidget(self.btn_gerar)
@@ -289,6 +303,8 @@ class FinanceiroWindow(QWidget):
         self.spin_valor_atraso.setValue(config["valor_atraso"])
         self.spin_vencimento.setValue(config["dia_vencimento"])
         self.txt_pix.setText(config["pix"])
+        self.txt_observacoes_recibo.clear()
+        self.chk_aplicar_multa.setChecked(False)
         self.carregando_config = False
         self.atualizar_preview()
 
@@ -300,6 +316,8 @@ class FinanceiroWindow(QWidget):
         self.spin_valor_atraso.setValue(155.00)
         self.spin_vencimento.setValue(10)
         self.txt_pix.setText("1196321-6999")
+        self.txt_observacoes_recibo.clear()
+        self.chk_aplicar_multa.setChecked(False)
         self.carregando_config = False
 
     def atualizar_preview(self):
@@ -312,6 +330,8 @@ class FinanceiroWindow(QWidget):
         turma = self._texto_turma(aluno.turma_id)
         pagas = self.spin_pagas.value()
         pendentes = max(14 - pagas, 0)
+        valor_pagamento = self._valor_pagamento_atual()
+        multa = "Sim" if self.chk_aplicar_multa.isChecked() else "Nao"
         self.lbl_pendentes.setText(f"Pendentes: {pendentes} de 14 parcelas")
         self.lbl_preview.setText(
             f"Aluno: {aluno.nome}\n"
@@ -319,7 +339,9 @@ class FinanceiroWindow(QWidget):
             f"Curso: 14 parcelas\n"
             f"Pagas: {pagas}\n"
             f"Pendentes: {pendentes}\n"
-            f"Arquivo gerado em PDF moderno, pronto para enviar ao aluno."
+            f"Multa aplicada: {multa}\n"
+            f"Valor a registrar: R$ {valor_pagamento:.2f}\n"
+            f"Arquivo gerado em PDF moderno, pronto para enviar ao responsavel."
         )
 
     def salvar_config_atual(self):
@@ -358,14 +380,25 @@ class FinanceiroWindow(QWidget):
             datetime.now().strftime("%Y-%m-%d"),
             f"Mensalidade - {aluno.nome} - parcela {novas_pagas}/14",
             "Mensalidade",
-            self.spin_valor.value(),
+            self._valor_pagamento_atual(),
             "RECEBIDO",
-            "Registrado pelo financeiro",
+            "Registrado pelo financeiro com multa" if self.chk_aplicar_multa.isChecked() else "Registrado pelo financeiro",
         )
         self.spin_pagas.setValue(novas_pagas)
         self.atualizar_preview()
         self.atualizar_pendentes_mes()
-        QMessageBox.information(self, "Pagamento", f"Pagamento registrado. Parcelas pagas: {novas_pagas}/14.")
+        whatsapp_aberto = self._gerar_recibo_e_abrir_whatsapp(aluno)
+        detalhe_whatsapp = (
+            f"O WhatsApp do responsavel foi aberto com a mensagem do recibo.\nPDF: {self.ultimo_recibo_gerado}"
+            if whatsapp_aberto
+            else "O recibo nao foi enviado porque falta WhatsApp do responsavel."
+        )
+        QMessageBox.information(
+            self,
+            "Pagamento",
+            f"Pagamento registrado. Parcelas pagas: {novas_pagas}/14.\n"
+            f"{detalhe_whatsapp}",
+        )
 
     def gerar_recibo(self):
         aluno = self.aluno_atual()
@@ -378,31 +411,13 @@ class FinanceiroWindow(QWidget):
             QMessageBox.warning(self, "Recibo", "Informe a data do primeiro pagamento.")
             return
 
-        self.salvar_config_atual()
-
-        nome_limpo = "".join(char for char in aluno.nome if char.isalnum() or char in (" ", "_")).strip()
-        destino_padrao = Path("recibos") / f"RECIBO_{nome_limpo.replace(' ', '_')}.pdf"
-        destino, _ = QFileDialog.getSaveFileName(
-            self,
-            "Salvar recibo",
-            str(destino_padrao),
-            "PDF (*.pdf)",
-        )
-        if not destino:
+        if not self._gerar_recibo_e_abrir_whatsapp(aluno):
             return
-
-        arquivo = gerar_recibo_pagamento_pdf(
-            aluno=aluno,
-            turma_texto=self._texto_turma(aluno.turma_id),
-            data_primeiro_pagamento=data,
-            parcelas_pagas=self.spin_pagas.value(),
-            valor_mensalidade=self.spin_valor.value(),
-            valor_atraso=self.spin_valor_atraso.value(),
-            dia_vencimento=self.spin_vencimento.value(),
-            pix=self.txt_pix.text().strip(),
-            destino=destino,
+        QMessageBox.information(
+            self,
+            "Recibo",
+            f"Recibo gerado e WhatsApp do responsavel aberto.\nPDF: {self.ultimo_recibo_gerado}",
         )
-        QMessageBox.information(self, "Recibo", f"Recibo gerado:\n{arquivo}")
 
     def atualizar_pendentes_mes(self):
         hoje = datetime.now()
@@ -434,7 +449,7 @@ class FinanceiroWindow(QWidget):
             self.tbl_pendentes_mes.setItem(row, 0, item_aluno)
             self.tbl_pendentes_mes.setItem(row, 1, QTableWidgetItem(f"{parcela_atual}/14"))
             self.tbl_pendentes_mes.setItem(row, 2, QTableWidgetItem(f"{pagas}/14"))
-            self.tbl_pendentes_mes.setItem(row, 3, QTableWidgetItem(aluno.whatsapp_aluno or aluno.whatsapp_resp or ""))
+            self.tbl_pendentes_mes.setItem(row, 3, QTableWidgetItem(aluno.whatsapp_resp or ""))
 
         self.lbl_pendentes_mes.setText(f"{len(pendentes)} aluno(s) pendente(s) neste mês")
 
@@ -451,20 +466,92 @@ class FinanceiroWindow(QWidget):
         if not aluno:
             return
 
-        telefone = self._normalizar_telefone(aluno.whatsapp_aluno or aluno.whatsapp_resp)
+        telefone = self._telefone_responsavel(aluno)
         if not telefone:
-            QMessageBox.warning(self, "Financeiro", "Aluno sem telefone cadastrado.")
+            QMessageBox.warning(self, "Financeiro", "Aluno sem WhatsApp do responsavel cadastrado.")
             return
 
         parcela = self.tbl_pendentes_mes.item(row, 1).text()
         mensagem = (
-            f"Ola, {aluno.nome}! Identificamos uma pendencia financeira da parcela {parcela} "
+            f"Ola! Identificamos uma pendencia financeira de {aluno.nome}, parcela {parcela}, "
             "na IPI Informatica. Por favor, entre em contato para regularizar."
         )
         QDesktopServices.openUrl(QUrl(f"https://wa.me/55{telefone}?text={quote(mensagem)}"))
 
+    def _gerar_recibo_e_abrir_whatsapp(self, aluno):
+        if not self._validar_recibo(aluno):
+            return False
+
+        self.salvar_config_atual()
+        arquivo = self._gerar_arquivo_recibo(aluno)
+        self.ultimo_recibo_gerado = arquivo.resolve()
+        telefone = self._telefone_responsavel(aluno)
+        mensagem = (
+            f"Ola! Segue o recibo de pagamento de {aluno.nome} da IPI Informatica."
+        )
+        QDesktopServices.openUrl(QUrl(f"https://wa.me/55{telefone}?text={quote(mensagem)}"))
+        return True
+
+    def _validar_recibo(self, aluno):
+        if not aluno:
+            QMessageBox.warning(self, "Recibo", "Selecione um aluno.")
+            return False
+
+        data = self.txt_primeiro_pagamento.text().strip()
+        if "_" in data or len(data) != 10:
+            QMessageBox.warning(self, "Recibo", "Informe a data do primeiro pagamento.")
+            return False
+
+        if not self._telefone_responsavel(aluno):
+            QMessageBox.warning(
+                self,
+                "Responsavel",
+                "Cadastre o WhatsApp do responsavel. Recibos financeiros nao sao enviados para o telefone do aluno.",
+            )
+            return False
+
+        return True
+
+    def _gerar_arquivo_recibo(self, aluno):
+        nome_limpo = "".join(char for char in aluno.nome if char.isalnum() or char in (" ", "_")).strip()
+        data_arquivo = datetime.now().strftime("%Y%m%d_%H%M")
+        destino = Path("recibos") / f"RECIBO_{nome_limpo.replace(' ', '_')}_{data_arquivo}.pdf"
+        return gerar_recibo_pagamento_pdf(
+            aluno=aluno,
+            turma_texto=self._texto_turma(aluno.turma_id),
+            data_primeiro_pagamento=self.txt_primeiro_pagamento.text().strip(),
+            parcelas_pagas=self.spin_pagas.value(),
+            valor_mensalidade=self.spin_valor.value(),
+            valor_atraso=self.spin_valor_atraso.value(),
+            dia_vencimento=self.spin_vencimento.value(),
+            pix=self.txt_pix.text().strip(),
+            observacoes=self._observacoes_recibo_atual(),
+            destino=destino,
+        )
+
+    def _valor_pagamento_atual(self):
+        if self.chk_aplicar_multa.isChecked():
+            return self.spin_valor_atraso.value()
+        return self.spin_valor.value()
+
+    def _observacoes_recibo_atual(self):
+        observacoes = self.txt_observacoes_recibo.toPlainText().strip()
+        if not self.chk_aplicar_multa.isChecked():
+            return observacoes
+
+        texto_multa = f"Multa aplicada. Valor recebido: R$ {self.spin_valor_atraso.value():.2f}."
+        if observacoes:
+            return f"{texto_multa}\n{observacoes}"
+        return texto_multa
+
+    def _telefone_responsavel(self, aluno):
+        return self._normalizar_telefone(aluno.whatsapp_resp if aluno else "")
+
     def _normalizar_telefone(self, telefone):
-        return "".join(char for char in (telefone or "") if char.isdigit())
+        digitos = "".join(char for char in (telefone or "") if char.isdigit())
+        if len(digitos) < 10:
+            return ""
+        return digitos[-11:]
 
     def exportar_pendentes_csv(self):
         destino, _ = QFileDialog.getSaveFileName(
@@ -643,5 +730,25 @@ class FinanceiroWindow(QWidget):
 
             QPushButton:hover {
                 background-color: #cbd5e1;
+            }
+        """
+
+    def _checkbox_style(self):
+        return "color: #334155; font-size: 20px; font-weight: 700;"
+
+    def _text_edit_style(self):
+        return """
+            QTextEdit {
+                background-color: #f8fafc;
+                color: #0f172a;
+                border: 1px solid #dbe3ef;
+                border-radius: 10px;
+                padding: 7px 10px;
+                font-size: 20px;
+                font-weight: 600;
+            }
+            QTextEdit:focus {
+                background-color: white;
+                border-color: #3b82f6;
             }
         """

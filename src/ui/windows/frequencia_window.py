@@ -216,7 +216,6 @@ class FrequenciaWindow(QWidget):
         self.card_progresso.findChild(QLabel, "valor").setText(f"{percentual}%")
         self.lbl_resumo.setText(
             f"Aluno: {aluno.nome}\n"
-            f"CPF: {aluno.cpf or '-'}\n"
             f"Status: {status}\n"
             f"Módulo atual: {aluno.modulo_atual or '-'}"
         )

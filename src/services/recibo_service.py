@@ -20,6 +20,7 @@ def gerar_recibo_pagamento(
     dia_vencimento,
     pix,
     destino,
+    observacoes="",
 ):
     inicio = datetime.strptime(data_primeiro_pagamento, "%d/%m/%Y")
     parcelas = []
@@ -48,6 +49,7 @@ def gerar_recibo_pagamento(
             valor_atraso=valor_atraso,
             dia_vencimento=dia_vencimento,
             pix=pix,
+            observacoes=observacoes,
         ),
         encoding="utf-8",
     )
@@ -64,6 +66,7 @@ def gerar_recibo_pagamento_pdf(
     dia_vencimento,
     pix,
     destino,
+    observacoes="",
 ):
     inicio = datetime.strptime(data_primeiro_pagamento, "%d/%m/%Y")
     parcelas = []
@@ -104,6 +107,7 @@ def gerar_recibo_pagamento_pdf(
         valor_atraso=valor_atraso,
         dia_vencimento=dia_vencimento,
         pix=pix,
+        observacoes=observacoes,
     )
     painter.end()
     return destino
@@ -138,6 +142,7 @@ def _desenhar_pdf_moderno(
     valor_atraso,
     dia_vencimento,
     pix,
+    observacoes="",
 ):
     painter.fillRect(QRectF(0, 0, 800, 1120), QColor("#ffffff"))
 
@@ -196,11 +201,18 @@ def _desenhar_pdf_moderno(
     _draw_text(painter, 432, 724, 150, 20, "PENDENTES", 10, "#64748b", True)
     _draw_text(painter, 432, 748, 180, 28, f"{pendentes} parcelas", 18, "#9a3412", True)
 
-    _draw_round(painter, 32, 812, 736, 66, "#fff1f2", "#fecdd3", radius=14)
+    aviso_y = 812
+    if observacoes:
+        _draw_round(painter, 32, 812, 736, 92, "#f8fafc", "#e2e8f0", radius=14)
+        _draw_text(painter, 54, 826, 220, 20, "OBSERVACOES", 10, "#64748b", True)
+        _draw_text(painter, 54, 850, 690, 42, observacoes, 11, "#334155", False)
+        aviso_y = 922
+
+    _draw_round(painter, 32, aviso_y, 736, 66, "#fff1f2", "#fecdd3", radius=14)
     _draw_text(
         painter,
         54,
-        824,
+        aviso_y + 12,
         690,
         42,
         "Em caso de cancelamento, verificar regras contratuais e disponibilidade da vaga da turma.",
@@ -220,6 +232,7 @@ def _html_recibo(
     valor_atraso,
     dia_vencimento,
     pix,
+    observacoes="",
 ):
     linhas = []
     for bloco in range(0, 14, 7):
@@ -269,6 +282,7 @@ td {{ border: 1px solid #111; padding: 6px; font-size: 14px; }}
 <tr><td colspan="7" class="info">HORARIO: {escape(turma_texto or '-')}</td></tr>
 <tr><td colspan="4" class="valor-ok">PARCELAS PAGAS ATÉ DIA {dia_vencimento}</td><td colspan="3">R$ {valor_mensalidade:,.2f}</td></tr>
 <tr><td colspan="4" class="valor-atraso">PARCELAS PAGAS DEPOIS DO VENCIMENTO</td><td colspan="3">R$ {valor_atraso:,.2f}</td></tr>
+{f'<tr><td colspan="7" class="info">OBSERVACOES: {escape(observacoes)}</td></tr>' if observacoes else ''}
 <tr><td colspan="7" class="aviso">EM CASO DE CANCELAMENTO, VERIFICAR REGRAS CONTRATUAIS E VAGA DA TURMA.</td></tr>
 </table>
 </body>

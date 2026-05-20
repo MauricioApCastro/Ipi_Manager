@@ -23,6 +23,7 @@ from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtGui import QCursor, QDesktopServices
 
 from src.database.repositories import MaquinaRepository, AlunoRepository, CursoRepository
+from src.services.app_config import definir_config, obter_config
 from src.ui.components.maquina_card import MaquinaCard
 from src.ui.components.seletor_aluno import SeletorAlunoDialog
 from src.ui.windows.aluno_window import AlunoWindow
@@ -31,7 +32,6 @@ from src.ui.windows.config_window import ConfigWindow
 from src.ui.windows.curso_window import CursoWindow
 from src.ui.windows.financeiro_window import FinanceiroWindow
 from src.ui.windows.frequencia_window import FrequenciaWindow
-from src.ui.windows.historico_window import HistoricoWindow
 from src.ui.windows.turma_window import TurmaWindow
 
 
@@ -50,6 +50,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(640, 480)
         self.resize(self.monitor_disponivel.size())
         self.setup_ui()
+        self._configurar_backup_meio_dia()
         self.carregar_maquinas()
 
     def setup_ui(self):
@@ -84,7 +85,6 @@ class MainWindow(QMainWindow):
         self.financeiro_window = FinanceiroWindow(self.db)
         self.caixa_window = CaixaWindow(self.db)
         self.frequencia_window = FrequenciaWindow(self.db)
-        self.historico_window = HistoricoWindow(self.db)
         self.config_window = ConfigWindow(self.db)
 
         self.stack.addWidget(self.content_area)
@@ -94,7 +94,6 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.financeiro_window)
         self.stack.addWidget(self.caixa_window)
         self.stack.addWidget(self.frequencia_window)
-        self.stack.addWidget(self.historico_window)
         self.stack.addWidget(self.config_window)
         self.main_layout.addWidget(self.stack)
 
@@ -109,10 +108,16 @@ class MainWindow(QMainWindow):
         self.menu_buttons["Financeiro"].clicked.connect(lambda: self._trocar_tela(4, "Financeiro"))
         self.menu_buttons["Caixa"].clicked.connect(lambda: self._trocar_tela(5, "Caixa"))
         self.menu_buttons["Frequência"].clicked.connect(lambda: self._trocar_tela(6, "Frequência"))
-        self.menu_buttons["Historico"].clicked.connect(lambda: self._trocar_tela(7, "Historico"))
-        self.menu_buttons["Configuracoes"].clicked.connect(lambda: self._trocar_tela(8, "Configuracoes"))
+        self.menu_buttons["Configuracoes"].clicked.connect(lambda: self._trocar_tela(7, "Configuracoes"))
         self.btn_backup.clicked.connect(self.fazer_backup)
         self._configurar_sidebar_retratil()
+
+    def _configurar_backup_meio_dia(self):
+        self.backup_diario_timer = QTimer(self)
+        self.backup_diario_timer.setInterval(60_000)
+        self.backup_diario_timer.timeout.connect(self._verificar_backup_meio_dia)
+        self.backup_diario_timer.start()
+        QTimer.singleShot(1000, self._verificar_backup_meio_dia)
 
     def _configurar_sidebar_retratil(self):
         self.sidebar_trigger_width = 12
@@ -228,7 +233,7 @@ class MainWindow(QMainWindow):
             self.menu_buttons[nome] = btn
             layout.addWidget(btn)
 
-        for nome in ("Historico", "Configuracoes"):
+        for nome in ("Configuracoes",):
             btn = QPushButton(nome)
             btn.setCursor(Qt.PointingHandCursor)
             btn.setStyleSheet(self._sidebar_button_style())
@@ -305,6 +310,41 @@ class MainWindow(QMainWindow):
             if antigo.is_dir():
                 shutil.rmtree(antigo)
 
+    def _verificar_backup_meio_dia(self):
+        agora = datetime.now()
+        if agora.hour != 12:
+            return
+
+        hoje = agora.strftime("%Y-%m-%d")
+        if obter_config(self.db, "ultimo_backup_meio_dia", "") == hoje:
+            return
+
+        try:
+            self._executar_backup_meio_dia()
+            definir_config(self.db, "ultimo_backup_meio_dia", hoje)
+        except Exception as exc:
+            definir_config(self.db, "ultimo_erro_backup_meio_dia", f"{agora:%d/%m/%Y %H:%M}: {exc}")
+
+    def _executar_backup_meio_dia(self):
+        db_path = Path(getattr(self.db, "db_path", "data/escola.db")).resolve()
+        destino_pc = db_path.parent.parent / "backups"
+        destino_pc.mkdir(parents=True, exist_ok=True)
+        self._criar_backup(destino_pc)
+        self._limpar_backups_antigos(destino_pc)
+
+        pasta_nuvem = obter_config(self.db, "backup_nuvem_path", "").strip()
+        if pasta_nuvem:
+            destino_nuvem = Path(pasta_nuvem)
+            destino_nuvem.mkdir(parents=True, exist_ok=True)
+            self._criar_backup(destino_nuvem)
+            self._limpar_backups_antigos(destino_nuvem)
+
+    def _limpar_backups_antigos(self, destino):
+        backups = sorted(destino.glob("backup_ipi_manager_*"), key=lambda item: item.stat().st_mtime, reverse=True)
+        for antigo in backups[7:]:
+            if antigo.is_dir():
+                shutil.rmtree(antigo)
+
     def _sidebar_button_style(self):
         return """
             QPushButton {
@@ -359,8 +399,6 @@ class MainWindow(QMainWindow):
             self.financeiro_window.carregar_dados()
         if menu_ativo == "Caixa":
             self.caixa_window.carregar_dados()
-        if menu_ativo == "Historico":
-            self.historico_window.carregar_dados()
         if menu_ativo == "Configuracoes":
             self.config_window.carregar_dados()
         if menu_ativo == "Frequência":
