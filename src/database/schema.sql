@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS alunos (
 CREATE TABLE IF NOT EXISTS cursos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
-    duracao_meses INTEGER DEFAULT 14,
+    duracao_meses INTEGER DEFAULT 0,
     valor_base REAL DEFAULT 135.00
 );
 

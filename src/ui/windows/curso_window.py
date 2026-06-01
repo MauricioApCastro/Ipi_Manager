@@ -134,15 +134,9 @@ class CursoWindow(QWidget):
 
         self._adicionar_botoes_padrao(botoes, self.btn_salvar_curso, self.btn_atualizar_curso, self.btn_excluir_curso)
 
-        self.btn_gerar = QPushButton("Gerar cronograma principal")
-        self._preparar_botao(self.btn_gerar)
-        self.btn_gerar.clicked.connect(self.gerar_cronograma)
-        self.btn_gerar.setStyleSheet(self._secondary_button_style())
-
         layout.addWidget(self.txt_curso)
         layout.addLayout(linha)
         layout.addLayout(botoes)
-        layout.addWidget(self.btn_gerar)
         return painel
 
     def _criar_painel_modulo(self):
@@ -211,7 +205,7 @@ class CursoWindow(QWidget):
         linha.addWidget(self.txt_aula, 2)
         linha.addWidget(self.spin_ordem_aula, 1)
 
-        self.txt_obs_aula = self._line_edit("Observação opcional")
+        self.txt_descricao_aula = self._line_edit("Descrição da aula")
 
         botoes = QHBoxLayout()
         botoes.setSpacing(8)
@@ -235,7 +229,7 @@ class CursoWindow(QWidget):
 
         layout.addWidget(self.combo_modulo_aula)
         layout.addLayout(linha)
-        layout.addWidget(self.txt_obs_aula)
+        layout.addWidget(self.txt_descricao_aula)
         layout.addLayout(botoes)
         return painel
 
@@ -256,7 +250,7 @@ class CursoWindow(QWidget):
         layout = painel.layout()
 
         self.tbl_aulas = QTableWidget(0, 4)
-        self.tbl_aulas.setHorizontalHeaderLabels(["Ordem", "Módulo", "Aula", "Observação"])
+        self.tbl_aulas.setHorizontalHeaderLabels(["Ordem", "Módulo", "Aula", "Descrição"])
         self.tbl_aulas.itemSelectionChanged.connect(self.carregar_aula_selecionada)
         self._preparar_tabela(self.tbl_aulas)
 
@@ -483,19 +477,19 @@ class CursoWindow(QWidget):
 
         self.aulas_modulo = self.repo.get_aulas_modulo(modulo_id)
         for row, aula in enumerate(self.aulas_modulo):
-            _, _, modulo_nome, titulo, ordem, observacoes = aula
+            _, _, modulo_nome, titulo, ordem, descricao = aula
             self.tbl_aulas.insertRow(row)
             self.tbl_aulas.setItem(row, 0, QTableWidgetItem(str(ordem or "")))
             self.tbl_aulas.setItem(row, 1, QTableWidgetItem(modulo_nome))
             self.tbl_aulas.setItem(row, 2, QTableWidgetItem(titulo))
-            self.tbl_aulas.setItem(row, 3, QTableWidgetItem(observacoes or ""))
+            self.tbl_aulas.setItem(row, 3, QTableWidgetItem(descricao or ""))
 
     def carregar_aula_selecionada(self):
         row = self.tbl_aulas.currentRow()
         if row < 0 or row >= len(self.aulas_modulo):
             return
 
-        aula_id, modulo_id, _, titulo, ordem, observacoes = self.aulas_modulo[row]
+        aula_id, modulo_id, _, titulo, ordem, descricao = self.aulas_modulo[row]
         self.aula_em_edicao_id = aula_id
         index = self.combo_modulo_aula.findData(modulo_id)
         self.combo_modulo_aula.blockSignals(True)
@@ -503,7 +497,7 @@ class CursoWindow(QWidget):
         self.combo_modulo_aula.blockSignals(False)
         self.txt_aula.setText(titulo)
         self.spin_ordem_aula.setValue(ordem or 0)
-        self.txt_obs_aula.setText(observacoes or "")
+        self.txt_descricao_aula.setText(descricao or "")
 
     def limpar_form_modulo(self):
         self.modulo_em_edicao_id = None
@@ -523,7 +517,7 @@ class CursoWindow(QWidget):
     def limpar_campos_aula(self):
         self.aula_em_edicao_id = None
         self.txt_aula.clear()
-        self.txt_obs_aula.clear()
+        self.txt_descricao_aula.clear()
         self.spin_ordem_aula.setValue(0)
 
     def salvar_aula(self):
@@ -544,7 +538,7 @@ class CursoWindow(QWidget):
             modulo_id,
             titulo,
             self.spin_ordem_aula.value(),
-            self.txt_obs_aula.text().strip(),
+            self.txt_descricao_aula.text().strip(),
         )
         self.limpar_campos_aula()
         self.carregar_aulas_modulo(modulo_id)
@@ -572,7 +566,7 @@ class CursoWindow(QWidget):
             modulo_id,
             titulo,
             self.spin_ordem_aula.value(),
-            self.txt_obs_aula.text().strip(),
+            self.txt_descricao_aula.text().strip(),
         )
         self.limpar_campos_aula()
         self.carregar_aulas_modulo(modulo_id)
@@ -596,11 +590,6 @@ class CursoWindow(QWidget):
         self.repo.delete_aula(self.aula_em_edicao_id)
         self.limpar_campos_aula()
         self.carregar_aulas_modulo(modulo_id)
-
-    def gerar_cronograma(self):
-        curso_id = self.repo.gerar_cronograma_padrao()
-        self.carregar_dados(curso_id)
-        QMessageBox.information(self, "Cronograma", "Cronograma principal de 14 meses gerado.")
 
     def _pre_requisito_valido(self):
         pre_id = self.combo_pre_requisito.currentData()

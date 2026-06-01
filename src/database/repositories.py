@@ -648,7 +648,7 @@ class CursoDuplicadoError(ValueError):
 
 
 class CursoRepository:
-    DURACAO_PADRAO_MESES = 14
+    DURACAO_PADRAO_MESES = 0
 
     def __init__(self, db):
         self.db = db
@@ -660,7 +660,7 @@ class CursoRepository:
                 CREATE TABLE IF NOT EXISTS cursos (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     nome TEXT NOT NULL,
-                    duracao_meses INTEGER DEFAULT 14,
+                    duracao_meses INTEGER DEFAULT 0,
                     valor_base REAL DEFAULT 135.00
                 )
             """)
@@ -688,12 +688,12 @@ class CursoRepository:
                 )
             """)
 
-            self._add_column_if_missing(conn, "cursos", "duracao_meses", "INTEGER DEFAULT 14")
+            self._add_column_if_missing(conn, "cursos", "duracao_meses", "INTEGER DEFAULT 0")
             self._add_column_if_missing(conn, "modulos", "carga_meses", "INTEGER DEFAULT 1")
             self._add_column_if_missing(conn, "modulos", "permite_flexibilidade", "INTEGER DEFAULT 0")
             conn.execute(
-                "UPDATE cursos SET duracao_meses = ? WHERE duracao_meses IS NULL OR duracao_meses <> ?",
-                (self.DURACAO_PADRAO_MESES, self.DURACAO_PADRAO_MESES),
+                "UPDATE cursos SET duracao_meses = ? WHERE duracao_meses IS NULL OR duracao_meses < 0",
+                (self.DURACAO_PADRAO_MESES,),
             )
             conn.commit()
 
@@ -716,21 +716,28 @@ class CursoRepository:
             params.append(curso_id_ignorado)
         return conn.execute(query, params).fetchone() is not None
 
-    def add_curso(self, nome, duracao_meses=14, valor_base=135.0):
+    def _normalizar_duracao(self, duracao_meses):
+        try:
+            duracao = int(duracao_meses)
+        except (TypeError, ValueError):
+            return self.DURACAO_PADRAO_MESES
+        return duracao if duracao >= 0 else self.DURACAO_PADRAO_MESES
+
+    def add_curso(self, nome, duracao_meses=0, valor_base=135.0):
         query = "INSERT INTO cursos (nome, duracao_meses, valor_base) VALUES (?, ?, ?)"
         with self.db.connection() as conn:
             if self._nome_curso_em_uso(conn, nome):
                 raise CursoDuplicadoError("Já existe um curso com este nome.")
-            cursor = conn.execute(query, (nome, self.DURACAO_PADRAO_MESES, valor_base))
+            cursor = conn.execute(query, (nome, self._normalizar_duracao(duracao_meses), valor_base))
             conn.commit()
             return cursor.lastrowid
 
-    def update_curso(self, curso_id, nome, duracao_meses=14, valor_base=135.0):
+    def update_curso(self, curso_id, nome, duracao_meses=0, valor_base=135.0):
         query = "UPDATE cursos SET nome = ?, duracao_meses = ?, valor_base = ? WHERE id = ?"
         with self.db.connection() as conn:
             if self._nome_curso_em_uso(conn, nome, curso_id):
                 raise CursoDuplicadoError("Já existe um curso com este nome.")
-            conn.execute(query, (nome, self.DURACAO_PADRAO_MESES, valor_base, curso_id))
+            conn.execute(query, (nome, self._normalizar_duracao(duracao_meses), valor_base, curso_id))
             conn.commit()
 
     def delete_curso(self, curso_id):
@@ -836,21 +843,21 @@ class CursoRepository:
         with self.db.connection() as conn:
             return conn.execute(query, (modulo_id,)).fetchall()
 
-    def add_aula(self, modulo_id, titulo, ordem, observacoes=""):
+    def add_aula(self, modulo_id, titulo, ordem, descricao=""):
         query = "INSERT INTO aulas (id_modulo, titulo, ordem, observacoes) VALUES (?, ?, ?, ?)"
         with self.db.connection() as conn:
-            cursor = conn.execute(query, (modulo_id, titulo, ordem, observacoes))
+            cursor = conn.execute(query, (modulo_id, titulo, ordem, descricao))
             conn.commit()
             return cursor.lastrowid
 
-    def update_aula(self, aula_id, modulo_id, titulo, ordem, observacoes=""):
+    def update_aula(self, aula_id, modulo_id, titulo, ordem, descricao=""):
         query = """
             UPDATE aulas
             SET id_modulo = ?, titulo = ?, ordem = ?, observacoes = ?
             WHERE id = ?
         """
         with self.db.connection() as conn:
-            conn.execute(query, (modulo_id, titulo, ordem, observacoes, aula_id))
+            conn.execute(query, (modulo_id, titulo, ordem, descricao, aula_id))
             conn.commit()
 
     def delete_aula(self, aula_id):
@@ -860,24 +867,7 @@ class CursoRepository:
 
     def gerar_cronograma_padrao(self):
         cursos = self.get_cursos()
-        curso_id = cursos[0][0] if cursos else self.add_curso("Curso Completo IPI", 14)
-
-        if self.get_modulos(curso_id):
-            return curso_id
-
-        for mes in range(1, 15):
-            modulo_id = self.add_modulo(
-                curso_id,
-                f"Modulo {mes:02d}",
-                mes,
-                carga_meses=1,
-                permite_flexibilidade=mes > 1,
-            )
-            for aula in range(1, 5):
-                ordem = ((mes - 1) * 4) + aula
-                self.add_aula(modulo_id, f"Aula {aula:02d}", ordem)
-
-        return curso_id
+        return cursos[0][0] if cursos else self.add_curso("Curso Completo IPI", 0)
 
 
 class CaixaRepository:

@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QLineEdit,
     QGraphicsDropShadowEffect,
     QSizePolicy,
 )
@@ -65,16 +64,9 @@ class MaquinaCard(QFrame):
         self.lbl_info_academica.setMinimumHeight(58)
         self.lbl_info_academica.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self._aplicar_estilo_info_academica()
-        self.lbl_info_academica.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.lbl_info_academica.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.lbl_info_academica.hide()
         self.layout.addWidget(self.lbl_info_academica)
-
-        self.txt_obs = QLineEdit()
-        self.txt_obs.setPlaceholderText("Anotacoes da aula...")
-        self.txt_obs.setMinimumHeight(38)
-        self._aplicar_estilo_observacao()
-        self.txt_obs.hide()
-        self.layout.addWidget(self.txt_obs)
 
         self.layout.addStretch()
 
@@ -96,14 +88,11 @@ class MaquinaCard(QFrame):
             self.lbl_badge.setText("OCUPADA")
             self.lbl_info_academica.setText(info_aula)
             self.lbl_info_academica.show()
-            self.txt_obs.show()
         else:
             self.lbl_status.setText("VAGO")
             self.lbl_status.setToolTip("")
             self.lbl_badge.setText("LIVRE")
             self.lbl_info_academica.hide()
-            self.txt_obs.hide()
-            self.txt_obs.clear()
 
         self._aplicar_estilo_status()
         self.atualizar_estilo()
@@ -118,12 +107,10 @@ class MaquinaCard(QFrame):
         self.lbl_status.setMinimumHeight(34 if compacto else 72)
         self.lbl_info_academica.setMinimumHeight(58 if compacto else 58)
         self.lbl_info_academica.setMaximumHeight(66 if compacto else 92)
-        self.txt_obs.setMinimumHeight(38 if compacto else 44)
         self.btn_acao.setMinimumHeight(38 if compacto else 52)
         self._aplicar_estilo_tag()
         self._aplicar_estilo_status()
         self._aplicar_estilo_info_academica()
-        self._aplicar_estilo_observacao()
         self._aplicar_estilo_botao()
         self.atualizar_estilo()
 
@@ -164,8 +151,8 @@ class MaquinaCard(QFrame):
         """)
 
     def _aplicar_estilo_info_academica(self):
-        fonte = 14 if self.compacto else 20
-        padding = "5px 8px" if self.compacto else "10px 12px"
+        fonte = 14 if self.compacto else 18
+        padding = "6px 8px" if self.compacto else "10px 12px"
         self.lbl_info_academica.setStyleSheet(f"""
             color: #b91c1c;
             font-size: {fonte}px;
@@ -173,25 +160,7 @@ class MaquinaCard(QFrame):
             background: #fef2f2;
             border-radius: 10px;
             padding: {padding};
-        """)
-
-    def _aplicar_estilo_observacao(self):
-        fonte = 14 if self.compacto else 16
-        padding = "5px 8px" if self.compacto else "8px 10px"
-        self.txt_obs.setStyleSheet(f"""
-            QLineEdit {{
-                font-size: {fonte}px;
-                color: #0f172a;
-                border: 1px solid #dbe3ef;
-                border-radius: 12px;
-                padding: {padding};
-                background: #f8fafc;
-            }}
-
-            QLineEdit:focus {{
-                border: 1px solid #3b82f6;
-                background: white;
-            }}
+            line-height: 1.2;
         """)
 
     def _aplicar_estilo_botao(self):

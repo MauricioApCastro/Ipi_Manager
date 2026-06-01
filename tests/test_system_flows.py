@@ -16,6 +16,7 @@ from src.database.repositories import (
 )
 from src.models.aluno import Aluno
 from src.services.recibo_service import gerar_recibo_pagamento_pdf
+from src.ui.windows.main_window import MainWindow
 
 
 APP = QApplication.instance() or QApplication([])
@@ -67,6 +68,7 @@ class SistemaFluxosTest(unittest.TestCase):
         self.assertEqual(modulos[0][2], "Modulo Inicial")
         self.assertEqual(aulas[0][0], aula_id)
         self.assertEqual(aulas[0][3], "Aula 01")
+        self.assertEqual(aulas[0][5], "Introducao")
 
         self.cursos.update_modulo(modulo_id, "Modulo Editado", 2, 1, False, None)
         self.assertEqual(self.cursos.get_modulos(curso_id)[0][2], "Modulo Editado")
@@ -88,9 +90,9 @@ class SistemaFluxosTest(unittest.TestCase):
         self.cursos.update_curso(curso_id, "Curso Teste", 15, 140.0)
         cursos = self.cursos.get_cursos()
         self.assertEqual(len(cursos), 2)
-        self.assertEqual(next(curso for curso in cursos if curso[0] == curso_id)[2], 14)
+        self.assertEqual(next(curso for curso in cursos if curso[0] == curso_id)[2], 15)
 
-    def test_curso_sempre_tem_14_meses_e_modulos_podem_variar(self):
+    def test_curso_pode_ter_menos_de_14_meses_e_modulos_podem_variar(self):
         curso_id = self.cursos.add_curso("Curso Flexivel", 10, 135.0)
         modulo_rapido_id = self.cursos.add_modulo(curso_id, "Modulo Rapido", 1, carga_meses=1)
         modulo_lento_id = self.cursos.add_modulo(
@@ -104,9 +106,59 @@ class SistemaFluxosTest(unittest.TestCase):
         curso = next(curso for curso in self.cursos.get_cursos() if curso[0] == curso_id)
         modulos = self.cursos.get_modulos(curso_id)
 
-        self.assertEqual(curso[2], 14)
+        self.assertEqual(curso[2], 10)
         self.assertEqual(next(modulo for modulo in modulos if modulo[0] == modulo_rapido_id)[4], 1)
         self.assertEqual(next(modulo for modulo in modulos if modulo[0] == modulo_lento_id)[4], 3)
+
+        self.cursos.update_curso(curso_id, "Curso Flexivel", 8, 135.0)
+        curso = next(curso for curso in self.cursos.get_cursos() if curso[0] == curso_id)
+        self.assertEqual(curso[2], 8)
+
+    def test_curso_pode_ficar_com_zero_meses_por_padrao(self):
+        curso_id = self.cursos.add_curso("Curso Sem Duracao", valor_base=135.0)
+        curso = next(curso for curso in self.cursos.get_cursos() if curso[0] == curso_id)
+        self.assertEqual(curso[2], 0)
+
+        self.cursos.update_curso(curso_id, "Curso Sem Duracao", 0, 140.0)
+        curso = next(curso for curso in self.cursos.get_cursos() if curso[0] == curso_id)
+        self.assertEqual(curso[2], 0)
+
+    def test_duracao_do_curso_nao_depende_da_quantidade_de_modulos(self):
+        curso_id = self.cursos.add_curso("Curso Independente", 6, 135.0)
+
+        for ordem in range(1, 4):
+            self.cursos.add_modulo(curso_id, f"Modulo {ordem}", ordem)
+
+        curso = next(curso for curso in self.cursos.get_cursos() if curso[0] == curso_id)
+        self.assertEqual(curso[2], 6)
+        self.assertEqual(len(self.cursos.get_modulos(curso_id)), 3)
+
+        self.cursos.gerar_cronograma_padrao()
+        curso = next(curso for curso in self.cursos.get_cursos() if curso[0] == curso_id)
+        self.assertEqual(curso[2], 6)
+        self.assertEqual(len(self.cursos.get_modulos(curso_id)), 3)
+
+    def test_cronograma_padrao_nao_cria_modulos_automaticos(self):
+        curso_id = self.cursos.gerar_cronograma_padrao()
+
+        curso = next(curso for curso in self.cursos.get_cursos() if curso[0] == curso_id)
+        self.assertEqual(curso[2], 0)
+        self.assertEqual(self.cursos.get_modulos(curso_id), [])
+
+    def test_card_mostra_modulo_e_titulo_real_da_aula(self):
+        curso_id = self.cursos.add_curso("Curso Card", 6, 135.0)
+        modulo_id = self.cursos.add_modulo(curso_id, "digitacao", 1)
+        self.cursos.add_aula(modulo_id, "teste com livro", 1, "Descricao")
+
+        aluno = self.criar_aluno("Aluno Card", turma_id=None, modulos_ids=[modulo_id])
+        aluno.modulo_atual = "digitacao"
+        aluno.licao_atual = 1
+        self.alunos.update(aluno)
+
+        window = MainWindow.__new__(MainWindow)
+        window.repo_curso = self.cursos
+
+        self.assertEqual(window._texto_aula_card(aluno), "digitacao\nteste com livro")
 
     def test_aluno_crud_modulos_turma_e_exclusao_libera_maquina(self):
         curso_id = self.cursos.add_curso("Curso Aluno", 14, 135.0)

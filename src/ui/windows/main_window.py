@@ -493,8 +493,6 @@ class MainWindow(QMainWindow):
                     if aluno:
                         info = self._texto_aula_card(aluno)
                         card.atualizar_status("OCUPADO", maq.ocupante, info)
-                        card.txt_obs.setText(aluno.observacoes or "")
-                        self._conectar_salvar_obs(card)
 
             self.maquina_cards.append(card)
 
@@ -543,14 +541,6 @@ class MainWindow(QMainWindow):
             card.ajustar_para_monitor(altura_card, compacto)
             self.grid_maquinas.addWidget(card, idx // colunas, idx % colunas)
 
-    def _conectar_salvar_obs(self, card):
-        card.txt_obs.editingFinished.connect(
-            lambda c=card: self.repo_aluno.salvar_observacao_aluno(
-                c.maquina.ocupante,
-                c.txt_obs.text(),
-            )
-        )
-
     def abrir_gerenciamento(self, card_que_pediu):
         if card_que_pediu.maquina.status == "OCUPADO":
             dialogo = QMessageBox(self)
@@ -566,12 +556,6 @@ class MainWindow(QMainWindow):
 
             if resposta == botao_cancelar:
                 return
-
-            if card_que_pediu.txt_obs.text():
-                self.repo_aluno.salvar_observacao_aluno(
-                    card_que_pediu.maquina.ocupante,
-                    card_que_pediu.txt_obs.text(),
-                )
 
             if resposta == botao_sim:
                 aluno_obj = self.repo_aluno.get_by_name(card_que_pediu.maquina.ocupante)
@@ -626,8 +610,6 @@ class MainWindow(QMainWindow):
                 self._registrar_presenca_e_notificar(aluno, card_que_pediu.maquina.tag)
                 info_aula = self._texto_aula_card(aluno)
                 card_que_pediu.atualizar_status("OCUPADO", nome_sel, info_aula)
-                card_que_pediu.txt_obs.setText(aluno.observacoes or "")
-                self._conectar_salvar_obs(card_que_pediu)
                 self.carregar_maquinas()
 
     def _turmas_hoje_para_seletor(self):
@@ -669,17 +651,10 @@ class MainWindow(QMainWindow):
             return "Curso concluído"
 
         modulo = (aluno.modulo_atual or "").split(",")[0].strip() or "Módulo"
-        licao = self._licao_visivel(aluno, modulo)
-        abreviacoes = {
-            "windows": "Win",
-            "word": "Word",
-            "excel": "Excel",
-            "powerpoint": "Ppt",
-            "internet": "Net",
-        }
-        chave = modulo.lower()
-        aula_nome = abreviacoes.get(chave, modulo[:3].title())
-        return f"{modulo}, Aula {aula_nome} {licao}"
+        titulo_aula = self._titulo_aula_atual(aluno, modulo)
+        if titulo_aula:
+            return f"{modulo}\n{titulo_aula}"
+        return modulo
 
     def _curso_concluido(self, aluno):
         return (aluno.modulo_atual or "").strip().lower() == "curso concluído"
@@ -730,6 +705,21 @@ class MainWindow(QMainWindow):
             if total_aulas:
                 return min(licao, total_aulas)
         return licao
+
+    def _titulo_aula_atual(self, aluno, modulo_nome):
+        licao = aluno.licao_atual or 1
+        for modulo in self._modulos_do_aluno_ordenados(aluno.modulos_ids or []):
+            if modulo[2] != modulo_nome:
+                continue
+
+            aulas = self.repo_curso.get_aulas_modulo(modulo[0])
+            if not aulas:
+                return ""
+
+            indice = max(0, min(licao, len(aulas)) - 1)
+            return aulas[indice][3] or ""
+
+        return ""
 
     def _aluno_menor_de_idade(self, aluno):
         if not aluno.nascimento:
