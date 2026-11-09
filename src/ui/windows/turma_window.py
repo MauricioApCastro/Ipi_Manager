@@ -1,21 +1,21 @@
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QGridLayout,
-    QFrame,
-    QLabel,
-    QPushButton,
-    QLineEdit,
-    QSpinBox,
     QComboBox,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QSplitter,
     QTableWidget,
     QTableWidgetItem,
-    QHeaderView,
-    QMessageBox,
-    QSplitter,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt5.QtCore import Qt
 
 from src.database.repositories import TurmaRepository
 
@@ -128,14 +128,16 @@ class TurmaWindow(QWidget):
         layout = painel.layout()
 
         self.tbl_turmas = QTableWidget(0, 6)
-        self.tbl_turmas.setHorizontalHeaderLabels([
-            "Turma",
-            "1ª aula",
-            "2ª aula",
-            "Cap.",
-            "Ocupadas",
-            "Livres",
-        ])
+        self.tbl_turmas.setHorizontalHeaderLabels(
+            [
+                "Turma",
+                "1ª aula",
+                "2ª aula",
+                "Cap.",
+                "Ocupadas",
+                "Livres",
+            ]
+        )
         self.tbl_turmas.itemSelectionChanged.connect(self.carregar_turma_selecionada)
         self._preparar_tabela(self.tbl_turmas)
         layout.addWidget(self.tbl_turmas)

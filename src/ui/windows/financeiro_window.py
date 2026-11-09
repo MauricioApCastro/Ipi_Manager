@@ -1,32 +1,31 @@
-from pathlib import Path
-from datetime import datetime
 import csv
+from datetime import datetime
+from pathlib import Path
 from urllib.parse import quote
 
-from PyQt5.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QGridLayout,
-    QFrame,
-    QLabel,
-    QPushButton,
-    QLineEdit,
-    QSpinBox,
-    QDoubleSpinBox,
-    QTextEdit,
-    QCheckBox,
-    QFileDialog,
-    QMessageBox,
-    QTableWidget,
-    QTableWidgetItem,
-    QHeaderView,
-    QSplitter,
-    QListWidget,
-    QListWidgetItem,
-)
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtWidgets import (
+    QCheckBox,
+    QDoubleSpinBox,
+    QFileDialog,
+    QFrame,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QSplitter,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.database.repositories import AlunoRepository, CaixaRepository, FinanceiroRepository
 from src.services.recibo_service import gerar_recibo_pagamento_pdf
@@ -245,7 +244,8 @@ class FinanceiroWindow(QWidget):
             self.alunos_filtrados = []
         else:
             self.alunos_filtrados = [
-                aluno for aluno in self.alunos
+                aluno
+                for aluno in self.alunos
                 if (aluno.nome or "").strip().lower().startswith(termo)
             ]
         self._popular_lista_alunos()
@@ -282,7 +282,8 @@ class FinanceiroWindow(QWidget):
         self.txt_busca.setText(aluno.nome or "")
         self.txt_busca.blockSignals(False)
         self.alunos_filtrados = [
-            item for item in self.alunos
+            item
+            for item in self.alunos
             if (item.nome or "").strip().lower().startswith((aluno.nome or "").strip().lower())
         ]
         self._popular_lista_alunos()
@@ -367,11 +368,15 @@ class FinanceiroWindow(QWidget):
 
         data = self.txt_primeiro_pagamento.text().strip()
         if "_" in data or len(data) != 10:
-            QMessageBox.warning(self, "Pagamento", "Informe a data do primeiro pagamento antes de registrar.")
+            QMessageBox.warning(
+                self, "Pagamento", "Informe a data do primeiro pagamento antes de registrar."
+            )
             return
 
         if self.spin_pagas.value() >= 14:
-            QMessageBox.information(self, "Pagamento", "Todas as parcelas deste aluno já foram pagas.")
+            QMessageBox.information(
+                self, "Pagamento", "Todas as parcelas deste aluno já foram pagas."
+            )
             return
 
         self.salvar_config_atual()
@@ -382,7 +387,9 @@ class FinanceiroWindow(QWidget):
             "Mensalidade",
             self._valor_pagamento_atual(),
             "RECEBIDO",
-            "Registrado pelo financeiro com multa" if self.chk_aplicar_multa.isChecked() else "Registrado pelo financeiro",
+            "Registrado pelo financeiro com multa"
+            if self.chk_aplicar_multa.isChecked()
+            else "Registrado pelo financeiro",
         )
         self.spin_pagas.setValue(novas_pagas)
         self.atualizar_preview()
@@ -396,8 +403,7 @@ class FinanceiroWindow(QWidget):
         QMessageBox.information(
             self,
             "Pagamento",
-            f"Pagamento registrado. Parcelas pagas: {novas_pagas}/14.\n"
-            f"{detalhe_whatsapp}",
+            f"Pagamento registrado. Parcelas pagas: {novas_pagas}/14.\n{detalhe_whatsapp}",
         )
 
     def gerar_recibo(self):
@@ -486,9 +492,7 @@ class FinanceiroWindow(QWidget):
         arquivo = self._gerar_arquivo_recibo(aluno)
         self.ultimo_recibo_gerado = arquivo.resolve()
         telefone = self._telefone_responsavel(aluno)
-        mensagem = (
-            f"Ola! Segue o recibo de pagamento de {aluno.nome} da IPI Informatica."
-        )
+        mensagem = f"Ola! Segue o recibo de pagamento de {aluno.nome} da IPI Informatica."
         QDesktopServices.openUrl(QUrl(f"https://wa.me/55{telefone}?text={quote(mensagem)}"))
         return True
 
@@ -513,7 +517,9 @@ class FinanceiroWindow(QWidget):
         return True
 
     def _gerar_arquivo_recibo(self, aluno):
-        nome_limpo = "".join(char for char in aluno.nome if char.isalnum() or char in (" ", "_")).strip()
+        nome_limpo = "".join(
+            char for char in aluno.nome if char.isalnum() or char in (" ", "_")
+        ).strip()
         data_arquivo = datetime.now().strftime("%Y%m%d_%H%M")
         destino = Path("recibos") / f"RECIBO_{nome_limpo.replace(' ', '_')}_{data_arquivo}.pdf"
         return gerar_recibo_pagamento_pdf(
@@ -566,10 +572,14 @@ class FinanceiroWindow(QWidget):
             writer = csv.writer(arquivo, delimiter=";")
             writer.writerow(["Aluno", "Parcela", "Pagas", "Telefone"])
             for row in range(self.tbl_pendentes_mes.rowCount()):
-                writer.writerow([
-                    self.tbl_pendentes_mes.item(row, col).text() if self.tbl_pendentes_mes.item(row, col) else ""
-                    for col in range(self.tbl_pendentes_mes.columnCount())
-                ])
+                writer.writerow(
+                    [
+                        self.tbl_pendentes_mes.item(row, col).text()
+                        if self.tbl_pendentes_mes.item(row, col)
+                        else ""
+                        for col in range(self.tbl_pendentes_mes.columnCount())
+                    ]
+                )
         QMessageBox.information(self, "Financeiro", f"Pendentes exportados:\n{destino}")
 
     def _texto_turma(self, turma_id):

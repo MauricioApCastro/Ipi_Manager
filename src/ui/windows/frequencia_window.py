@@ -1,27 +1,32 @@
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QFrame,
-    QLabel,
-    QPushButton,
-    QLineEdit,
     QDateEdit,
     QFileDialog,
-    QMessageBox,
-    QTableWidget,
-    QTableWidgetItem,
+    QFrame,
+    QHBoxLayout,
     QHeaderView,
-    QSplitter,
+    QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QSplitter,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt5.QtCore import Qt, QDate
 
-from src.database.repositories import AlunoRepository, CalendarioRepository, CursoRepository, ReposicaoRepository
+from src.database.repositories import (
+    AlunoRepository,
+    CalendarioRepository,
+    CursoRepository,
+    ReposicaoRepository,
+)
 from src.services.diploma_service import gerar_diploma_pdf
 
 
@@ -169,7 +174,8 @@ class FrequenciaWindow(QWidget):
             self.alunos_filtrados = []
         else:
             self.alunos_filtrados = [
-                aluno for aluno in self.alunos
+                aluno
+                for aluno in self.alunos
                 if (aluno.nome or "").strip().lower().startswith(termo)
             ]
         self._popular_lista_alunos()
@@ -215,12 +221,11 @@ class FrequenciaWindow(QWidget):
         self.card_aulas.findChild(QLabel, "valor").setText(f"{concluidas}/{total}")
         self.card_progresso.findChild(QLabel, "valor").setText(f"{percentual}%")
         self.lbl_resumo.setText(
-            f"Aluno: {aluno.nome}\n"
-            f"Status: {status}\n"
-            f"Módulo atual: {aluno.modulo_atual or '-'}"
+            f"Aluno: {aluno.nome}\nStatus: {status}\nMódulo atual: {aluno.modulo_atual or '-'}"
         )
         self.lbl_status_diploma.setText(
-            "Pronto para gerar diploma." if self._curso_concluido(aluno)
+            "Pronto para gerar diploma."
+            if self._curso_concluido(aluno)
             else "Diploma disponível quando o curso estiver concluído."
         )
         self.btn_diploma.setEnabled(self._curso_concluido(aluno))
@@ -247,7 +252,9 @@ class FrequenciaWindow(QWidget):
 
         data_falta = self.tbl_presencas.item(row, 0).data(Qt.UserRole)
         data_reposicao = self.data_reposicao.date().toString("yyyy-MM-dd")
-        self.repo_reposicao.agendar(aluno.id, data_falta, data_reposicao, "Reposicao agendada pela frequencia")
+        self.repo_reposicao.agendar(
+            aluno.id, data_falta, data_reposicao, "Reposicao agendada pela frequencia"
+        )
         self.carregar_aluno_atual()
         QMessageBox.information(self, "Reposicao", "Reposicao agendada.")
 
@@ -257,15 +264,21 @@ class FrequenciaWindow(QWidget):
             QMessageBox.warning(self, "Diploma", "Selecione um aluno.")
             return
         if not self._curso_concluido(aluno):
-            QMessageBox.warning(self, "Diploma", "O diploma só pode ser gerado após concluir o curso.")
+            QMessageBox.warning(
+                self, "Diploma", "O diploma só pode ser gerado após concluir o curso."
+            )
             return
 
         aulas = self._aulas_do_aluno(aluno)
         concluidas, _total = self._totais_aulas(aluno, aulas)
         presencas = self._presencas_aluno(aluno.id)
-        nome_limpo = "".join(char for char in aluno.nome if char.isalnum() or char in (" ", "_")).strip()
+        nome_limpo = "".join(
+            char for char in aluno.nome if char.isalnum() or char in (" ", "_")
+        ).strip()
         destino_padrao = Path("recibos") / f"DIPLOMA_{nome_limpo.replace(' ', '_')}.pdf"
-        destino, _ = QFileDialog.getSaveFileName(self, "Salvar diploma", str(destino_padrao), "PDF (*.pdf)")
+        destino, _ = QFileDialog.getSaveFileName(
+            self, "Salvar diploma", str(destino_padrao), "PDF (*.pdf)"
+        )
         if not destino:
             return
 
@@ -291,10 +304,7 @@ class FrequenciaWindow(QWidget):
             ).fetchall()
 
     def _frequencia_aluno(self, aluno, presencas):
-        reposicoes_por_falta = {
-            row[1]: row
-            for row in self.repo_reposicao.get_aluno(aluno.id)
-        }
+        reposicoes_por_falta = {row[1]: row for row in self.repo_reposicao.get_aluno(aluno.id)}
         presencas_por_dia = {}
         for data_hora, maquina, _obs in presencas:
             data = self._data_presenca(data_hora)
@@ -306,10 +316,7 @@ class FrequenciaWindow(QWidget):
 
         aulas_programadas = self._aulas_programadas_aluno(aluno)
         if not aulas_programadas or not presencas_por_dia:
-            return [
-                (data_hora, maquina, "Presente")
-                for data_hora, maquina, _obs in presencas
-            ]
+            return [(data_hora, maquina, "Presente") for data_hora, maquina, _obs in presencas]
 
         inicio = min(presencas_por_dia)
         hoje = datetime.now().date()
@@ -385,7 +392,9 @@ class FrequenciaWindow(QWidget):
         return False
 
     def _eh_feriado(self, dia):
-        return dia in self._feriados_ano(dia.year) or dia.strftime("%Y-%m-%d") in self.repo_calendario.datas_excecao_ano(dia.year)
+        return dia in self._feriados_ano(dia.year) or dia.strftime(
+            "%Y-%m-%d"
+        ) in self.repo_calendario.datas_excecao_ano(dia.year)
 
     def _feriados_ano(self, ano):
         pascoa = self._domingo_pascoa(ano)
@@ -416,7 +425,7 @@ class FrequenciaWindow(QWidget):
         h = (19 * a + b - d - g + 15) % 30
         i = c // 4
         k = c % 4
-        l = (32 + 2 * e + 2 * i - h - k) % 7
+        l = (32 + 2 * e + 2 * i - h - k) % 7  # noqa: E741 (nome do algoritmo de Páscoa)
         m = (a + 11 * h + 22 * l) // 451
         mes = (h + l - 7 * m + 114) // 31
         dia = ((h + l - 7 * m + 114) % 31) + 1
@@ -425,11 +434,7 @@ class FrequenciaWindow(QWidget):
     def _indice_dia_semana(self, dia):
         normalizado = (dia or "").strip().lower()
         normalizado = (
-            normalizado
-            .replace("á", "a")
-            .replace("ã", "a")
-            .replace("é", "e")
-            .replace("ç", "c")
+            normalizado.replace("á", "a").replace("ã", "a").replace("é", "e").replace("ç", "c")
         )
         dias = {
             "segunda": 0,

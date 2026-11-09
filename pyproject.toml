@@ -1,0 +1,31 @@
+[project]
+name = "ipi-pro"
+version = "1.0.0"
+description = "Gestão de alunos, turmas, máquinas e financeiro para escolas de informática"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Maurício Castro", email = "contato@mactecnology.com.br" }]
+dependencies = [
+    "PyQt5>=5.15",
+]
+
+[project.urls]
+Homepage = "https://mactecnology.com.br"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["*.spec", "build", "dist"]
+
+[tool.ruff.lint]
+# E/W: estilo PEP 8 · F: erros reais (pyflakes) · I: ordem de imports
+# B: armadilhas comuns (bugbear) · UP: sintaxe moderna
+select = ["E", "W", "F", "I", "B", "UP"]
+ignore = ["E501", "UP031"]
+
+[tool.ruff.lint.per-file-ignores]
+# scripts ajustam o sys.path antes de importar o projeto
+"scripts/*" = ["E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

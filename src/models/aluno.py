@@ -1,5 +1,16 @@
 class Aluno:
-    def __init__(self, id, nome, whatsapp_aluno, whatsapp_resp, cpf, nascimento, licao_atual=1, modulo_atual='Introdução', observacoes=None):
+    def __init__(
+        self,
+        id,
+        nome,
+        whatsapp_aluno,
+        whatsapp_resp,
+        cpf,
+        nascimento,
+        licao_atual=1,
+        modulo_atual="Introdução",
+        observacoes=None,
+    ):
         self.id = id
         self.nome = nome
         self.whatsapp_aluno = whatsapp_aluno

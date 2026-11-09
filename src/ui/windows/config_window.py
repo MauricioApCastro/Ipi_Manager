@@ -1,11 +1,23 @@
 from datetime import datetime
 
+from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel, QPushButton, QLineEdit,
-    QSpinBox, QDateEdit, QComboBox, QMessageBox, QTableWidget, QTableWidgetItem,
-    QHeaderView, QFileDialog,
+    QComboBox,
+    QDateEdit,
+    QFileDialog,
+    QFrame,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt5.QtCore import Qt, QDate
 
 from src.database.repositories import CalendarioRepository
 from src.services.app_config import definir_config, obter_config
@@ -43,9 +55,13 @@ class ConfigWindow(QWidget):
         linha_backup.addWidget(self.btn_escolher_backup)
         linha_backup.addWidget(self.btn_salvar_backup)
 
-        self.lbl_backup_info = QLabel("Ao meio-dia, o sistema salva backup no PC e nesta pasta da nuvem.")
+        self.lbl_backup_info = QLabel(
+            "Ao meio-dia, o sistema salva backup no PC e nesta pasta da nuvem."
+        )
         self.lbl_backup_info.setWordWrap(True)
-        self.lbl_backup_info.setStyleSheet("color: #64748b; font-size: 18px; font-weight: 700; border: none;")
+        self.lbl_backup_info.setStyleSheet(
+            "color: #64748b; font-size: 18px; font-weight: 700; border: none;"
+        )
 
         backup_layout.addLayout(linha_backup)
         backup_layout.addWidget(self.lbl_backup_info)
@@ -159,7 +175,9 @@ class ConfigWindow(QWidget):
 
     def _painel_base(self, titulo):
         painel = QFrame()
-        painel.setStyleSheet("QFrame { background-color: white; border: 1px solid #e2e8f0; border-radius: 16px; }")
+        painel.setStyleSheet(
+            "QFrame { background-color: white; border: 1px solid #e2e8f0; border-radius: 16px; }"
+        )
         layout = QVBoxLayout(painel)
         layout.setContentsMargins(16, 14, 16, 16)
         layout.setSpacing(10)
@@ -183,7 +201,9 @@ class ConfigWindow(QWidget):
         tabela.setEditTriggers(QTableWidget.NoEditTriggers)
         tabela.verticalHeader().setVisible(False)
         tabela.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        tabela.setStyleSheet("QTableWidget { border: none; color: #0f172a; font-size: 18px; } QHeaderView::section { background-color: #f1f5f9; padding: 8px; font-weight: 800; }")
+        tabela.setStyleSheet(
+            "QTableWidget { border: none; color: #0f172a; font-size: 18px; } QHeaderView::section { background-color: #f1f5f9; padding: 8px; font-weight: 800; }"
+        )
 
     def _input_style(self):
         return "QLineEdit, QDateEdit, QComboBox, QSpinBox { background-color: #f8fafc; color: #0f172a; border: 1px solid #dbe3ef; border-radius: 10px; padding: 7px 10px; font-size: 20px; font-weight: 600; }"

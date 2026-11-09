@@ -2,8 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from PyQt5.QtCore import QMarginsF, QRectF, QSizeF, Qt
-from PyQt5.QtGui import QColor, QFont, QPainter, QPen
-from PyQt5.QtGui import QPdfWriter
+from PyQt5.QtGui import QColor, QFont, QPainter, QPdfWriter, QPen
 
 
 def gerar_diploma_pdf(aluno, curso_nome, total_aulas, total_presencas, destino):
@@ -30,7 +29,9 @@ def _draw_round(painter, x, y, w, h, color, border=None, radius=18, width=1):
     painter.drawRoundedRect(QRectF(x, y, w, h), radius, radius)
 
 
-def _draw_text(painter, x, y, w, h, text, size=18, color="#0f172a", bold=False, align=Qt.AlignCenter):
+def _draw_text(
+    painter, x, y, w, h, text, size=18, color="#0f172a", bold=False, align=Qt.AlignCenter
+):
     font = QFont("Times New Roman", size)
     font.setBold(bold)
     painter.setFont(font)
@@ -67,7 +68,18 @@ def _desenhar_diploma(painter, aluno, curso_nome, total_aulas, total_presencas):
     _draw_text(painter, 540, 532, 220, 22, "Presencas registradas", 14, "#64748b", True)
     _draw_text(painter, 540, 558, 220, 34, str(total_presencas), 28, "#1d4ed8", True)
 
-    _draw_text(painter, 130, 650, 330, 30, f"Emitido em {hoje}", 16, "#475569", False, Qt.AlignLeft | Qt.AlignVCenter)
+    _draw_text(
+        painter,
+        130,
+        650,
+        330,
+        30,
+        f"Emitido em {hoje}",
+        16,
+        "#475569",
+        False,
+        Qt.AlignLeft | Qt.AlignVCenter,
+    )
     _draw_text(painter, 720, 650, 260, 30, "IPI Informatica", 16, "#475569", True)
     painter.setPen(QPen(QColor("#94a3b8"), 2))
     painter.drawLine(700, 640, 1000, 640)

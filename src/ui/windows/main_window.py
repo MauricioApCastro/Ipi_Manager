@@ -1,28 +1,28 @@
-from datetime import datetime
-from pathlib import Path
 import shutil
 import sqlite3
+from datetime import datetime
+from pathlib import Path
 from urllib.parse import quote
 
-from PyQt5.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QHBoxLayout,
-    QVBoxLayout,
-    QFrame,
-    QLabel,
-    QPushButton,
-    QGridLayout,
-    QMessageBox,
-    QScrollArea,
-    QStackedWidget,
-    QApplication,
-    QFileDialog,
-)
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtGui import QCursor, QDesktopServices
+from PyQt5.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
-from src.database.repositories import MaquinaRepository, AlunoRepository, CursoRepository
+from src.database.repositories import AlunoRepository, CursoRepository, MaquinaRepository
 from src.services.app_config import definir_config, obter_config
 from src.ui.components.maquina_card import MaquinaCard
 from src.ui.components.seletor_aluno import SeletorAlunoDialog
@@ -101,14 +101,18 @@ class MainWindow(QMainWindow):
         self.sidebar.setParent(self.central_widget)
         self._posicionar_sidebar()
 
-        self.menu_buttons["Visão geral"].clicked.connect(lambda: self._trocar_tela(0, "Visão geral"))
+        self.menu_buttons["Visão geral"].clicked.connect(
+            lambda: self._trocar_tela(0, "Visão geral")
+        )
         self.menu_buttons["Alunos"].clicked.connect(lambda: self._trocar_tela(1, "Alunos"))
         self.menu_buttons["Turmas"].clicked.connect(lambda: self._trocar_tela(2, "Turmas"))
         self.menu_buttons["Cursos"].clicked.connect(lambda: self._trocar_tela(3, "Cursos"))
         self.menu_buttons["Financeiro"].clicked.connect(lambda: self._trocar_tela(4, "Financeiro"))
         self.menu_buttons["Caixa"].clicked.connect(lambda: self._trocar_tela(5, "Caixa"))
         self.menu_buttons["Frequência"].clicked.connect(lambda: self._trocar_tela(6, "Frequência"))
-        self.menu_buttons["Configuracoes"].clicked.connect(lambda: self._trocar_tela(7, "Configuracoes"))
+        self.menu_buttons["Configuracoes"].clicked.connect(
+            lambda: self._trocar_tela(7, "Configuracoes")
+        )
         self.btn_backup.clicked.connect(self.fazer_backup)
         self._configurar_sidebar_retratil()
 
@@ -229,7 +233,9 @@ class MainWindow(QMainWindow):
         for nome, ativo in menus:
             btn = QPushButton(nome)
             btn.setCursor(Qt.PointingHandCursor)
-            btn.setStyleSheet(self._sidebar_active_style() if ativo else self._sidebar_button_style())
+            btn.setStyleSheet(
+                self._sidebar_active_style() if ativo else self._sidebar_button_style()
+            )
             self.menu_buttons[nome] = btn
             layout.addWidget(btn)
 
@@ -284,7 +290,9 @@ class MainWindow(QMainWindow):
         if not db_path.exists():
             raise FileNotFoundError(f"Banco de dados nÃ£o encontrado: {db_path}")
 
-        pasta_backup = destino_base / f"backup_ipi_manager_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        pasta_backup = (
+            destino_base / f"backup_ipi_manager_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
         pasta_backup.mkdir(parents=True, exist_ok=False)
 
         self._backup_sqlite(db_path, pasta_backup / "escola.db")
@@ -305,7 +313,11 @@ class MainWindow(QMainWindow):
         destino = db_path.parent.parent / "backups"
         destino.mkdir(parents=True, exist_ok=True)
         self._criar_backup(destino)
-        backups = sorted(destino.glob("backup_ipi_manager_*"), key=lambda item: item.stat().st_mtime, reverse=True)
+        backups = sorted(
+            destino.glob("backup_ipi_manager_*"),
+            key=lambda item: item.stat().st_mtime,
+            reverse=True,
+        )
         for antigo in backups[7:]:
             if antigo.is_dir():
                 shutil.rmtree(antigo)
@@ -340,7 +352,11 @@ class MainWindow(QMainWindow):
             self._limpar_backups_antigos(destino_nuvem)
 
     def _limpar_backups_antigos(self, destino):
-        backups = sorted(destino.glob("backup_ipi_manager_*"), key=lambda item: item.stat().st_mtime, reverse=True)
+        backups = sorted(
+            destino.glob("backup_ipi_manager_*"),
+            key=lambda item: item.stat().st_mtime,
+            reverse=True,
+        )
         for antigo in backups[7:]:
             if antigo.is_dir():
                 shutil.rmtree(antigo)
@@ -365,12 +381,15 @@ class MainWindow(QMainWindow):
         """
 
     def _sidebar_active_style(self):
-        return self._sidebar_button_style() + """
+        return (
+            self._sidebar_button_style()
+            + """
             QPushButton {
                 background-color: #2563eb;
                 color: #ffffff;
             }
         """
+        )
 
     def _sidebar_backup_style(self):
         return """
@@ -406,9 +425,7 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(index)
         for nome, botao in self.menu_buttons.items():
             botao.setStyleSheet(
-                self._sidebar_active_style()
-                if nome == menu_ativo
-                else self._sidebar_button_style()
+                self._sidebar_active_style() if nome == menu_ativo else self._sidebar_button_style()
             )
 
     def _criar_header(self):
@@ -563,7 +580,9 @@ class MainWindow(QMainWindow):
                     nova_licao, novo_modulo, curso_concluido = self._proximo_passo_aluno(aluno_obj)
                     if curso_concluido:
                         self.repo_aluno.concluir_curso(aluno_obj.id)
-                        QMessageBox.information(self, "Curso", f"{aluno_obj.nome} concluiu o curso.")
+                        QMessageBox.information(
+                            self, "Curso", f"{aluno_obj.nome} concluiu o curso."
+                        )
                     else:
                         self.repo_aluno.atualizar_progresso(aluno_obj.id, nova_licao, novo_modulo)
 
@@ -575,8 +594,7 @@ class MainWindow(QMainWindow):
         alunos_horario = self.repo_aluno.get_alunos_do_horario_atual()
         alunos_horario = [aluno for aluno in alunos_horario if not self._curso_concluido(aluno)]
         todos_alunos = [
-            aluno for aluno in self.repo_aluno.get_all()
-            if not self._curso_concluido(aluno)
+            aluno for aluno in self.repo_aluno.get_all() if not self._curso_concluido(aluno)
         ]
         turmas_hoje = self._turmas_hoje_para_seletor()
         seletor = SeletorAlunoDialog(
@@ -615,10 +633,7 @@ class MainWindow(QMainWindow):
     def _turmas_hoje_para_seletor(self):
         turmas_hoje = []
         for horario, turma, alunos in self.repo_aluno.get_turmas_do_dia_com_alunos():
-            alunos_ativos = [
-                aluno for aluno in alunos
-                if not self._curso_concluido(aluno)
-            ]
+            alunos_ativos = [aluno for aluno in alunos if not self._curso_concluido(aluno)]
             turmas_hoje.append((horario, turma, alunos_ativos))
         return turmas_hoje
 
@@ -682,7 +697,7 @@ class MainWindow(QMainWindow):
         if total_aulas and licao_atual < total_aulas:
             return licao_atual + 1, modulo_atual, False
 
-        for proximo_modulo in modulos[indice_atual + 1:]:
+        for proximo_modulo in modulos[indice_atual + 1 :]:
             if self.repo_curso.get_aulas_modulo(proximo_modulo[0]):
                 return 1, proximo_modulo[2], False
 
@@ -690,8 +705,7 @@ class MainWindow(QMainWindow):
 
     def _modulos_do_aluno_ordenados(self, modulos_ids):
         modulos = [
-            modulo for modulo in self.repo_curso.get_all_modulos()
-            if modulo[0] in modulos_ids
+            modulo for modulo in self.repo_curso.get_all_modulos() if modulo[0] in modulos_ids
         ]
         modulos.sort(key=lambda modulo: (modulo[3] or 0, modulo[0]))
         return modulos
@@ -730,7 +744,11 @@ class MainWindow(QMainWindow):
             return False
 
         hoje = datetime.now().date()
-        idade = hoje.year - nascimento.year - ((hoje.month, hoje.day) < (nascimento.month, nascimento.day))
+        idade = (
+            hoje.year
+            - nascimento.year
+            - ((hoje.month, hoje.day) < (nascimento.month, nascimento.day))
+        )
         return idade < 18
 
     def _normalizar_telefone(self, telefone):

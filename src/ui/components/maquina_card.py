@@ -1,14 +1,14 @@
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (
     QFrame,
-    QVBoxLayout,
+    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QGraphicsDropShadowEffect,
     QSizePolicy,
+    QVBoxLayout,
 )
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtGui import QColor
 
 
 class MaquinaCard(QFrame):
@@ -195,14 +195,17 @@ class MaquinaCard(QFrame):
                     border-radius: 20px;
                 }
             """)
-            self.lbl_badge.setStyleSheet("""
+            self.lbl_badge.setStyleSheet(
+                """
                 background-color: #fee2e2;
                 color: #b91c1c;
                 padding: %s;
                 border-radius: 12px;
                 font-size: %dpx;
                 font-weight: 800;
-            """ % ("5px 9px" if self.compacto else "6px 10px", 16 if self.compacto else 20))
+            """
+                % ("5px 9px" if self.compacto else "6px 10px", 16 if self.compacto else 20)
+            )
             self.btn_acao.setText("Desocupar")
         else:
             self.shadow.setColor(QColor(15, 23, 42, 20))
@@ -214,14 +217,17 @@ class MaquinaCard(QFrame):
                     border-radius: 20px;
                 }
             """)
-            self.lbl_badge.setStyleSheet("""
+            self.lbl_badge.setStyleSheet(
+                """
                 background-color: #dcfce7;
                 color: #047857;
                 padding: %s;
                 border-radius: 12px;
                 font-size: %dpx;
                 font-weight: 800;
-            """ % ("5px 9px" if self.compacto else "6px 10px", 16 if self.compacto else 20))
+            """
+                % ("5px 9px" if self.compacto else "6px 10px", 16 if self.compacto else 20)
+            )
             self.btn_acao.setText("Ocupar")
 
         self._aplicar_estilo_botao()

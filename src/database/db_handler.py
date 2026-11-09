@@ -1,7 +1,7 @@
-import sqlite3
-from contextlib import contextmanager
 import os
+import sqlite3
 import sys
+from contextlib import contextmanager
 
 
 def default_database_path():
@@ -30,6 +30,6 @@ class Database:
     def execute_script(self, script_path):
         """Executa um arquivo .sql para criar ou atualizar as tabelas."""
         with self.connection() as conn:
-            with open(script_path, 'r', encoding='utf-8') as f:
+            with open(script_path, encoding="utf-8") as f:
                 conn.executescript(f.read())
             conn.commit()

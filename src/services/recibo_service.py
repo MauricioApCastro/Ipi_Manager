@@ -3,9 +3,7 @@ from html import escape
 from pathlib import Path
 
 from PyQt5.QtCore import QMarginsF, QRectF, QSizeF, Qt
-from PyQt5.QtGui import QColor, QFont, QPainter, QPen
-from PyQt5.QtGui import QPdfWriter
-
+from PyQt5.QtGui import QColor, QFont, QPainter, QPdfWriter, QPen
 
 MESES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]
 
@@ -28,12 +26,14 @@ def gerar_recibo_pagamento(
     for index in range(14):
         mes_index = (inicio.month - 1 + index) % 12
         ano = inicio.year + ((inicio.month - 1 + index) // 12)
-        parcelas.append({
-            "numero": index + 1,
-            "mes": MESES[mes_index],
-            "ano": ano,
-            "status": "PAGO" if index < parcelas_pagas else "a vencer",
-        })
+        parcelas.append(
+            {
+                "numero": index + 1,
+                "mes": MESES[mes_index],
+                "ano": ano,
+                "status": "PAGO" if index < parcelas_pagas else "a vencer",
+            }
+        )
 
     termino = parcelas[-1]
     destino = Path(destino)
@@ -74,12 +74,14 @@ def gerar_recibo_pagamento_pdf(
     for index in range(14):
         mes_index = (inicio.month - 1 + index) % 12
         ano = inicio.year + ((inicio.month - 1 + index) // 12)
-        parcelas.append({
-            "numero": index + 1,
-            "mes": MESES[mes_index],
-            "ano": ano,
-            "status": "PAGO" if index < parcelas_pagas else "a vencer",
-        })
+        parcelas.append(
+            {
+                "numero": index + 1,
+                "mes": MESES[mes_index],
+                "ano": ano,
+                "status": "PAGO" if index < parcelas_pagas else "a vencer",
+            }
+        )
 
     termino = parcelas[-1]
     destino = Path(destino)
@@ -119,7 +121,18 @@ def _draw_round(painter, x, y, w, h, color, border=None, radius=14):
     painter.drawRoundedRect(QRectF(x, y, w, h), radius, radius)
 
 
-def _draw_text(painter, x, y, w, h, text, size=12, color="#0f172a", bold=False, align=Qt.AlignLeft | Qt.AlignVCenter):
+def _draw_text(
+    painter,
+    x,
+    y,
+    w,
+    h,
+    text,
+    size=12,
+    color="#0f172a",
+    bold=False,
+    align=Qt.AlignLeft | Qt.AlignVCenter,
+):
     font = QFont("Arial", size)
     font.setBold(bold)
     painter.setFont(font)
@@ -149,7 +162,9 @@ def _desenhar_pdf_moderno(
     _draw_round(painter, 32, 28, 736, 118, "#0f172a", radius=18)
     _draw_text(painter, 58, 44, 300, 24, "IPI INFORMÁTICA", 10, "#93c5fd", True)
     _draw_text(painter, 58, 68, 560, 42, "Recibo e Controle de Pagamento", 24, "#ffffff", True)
-    _draw_text(painter, 58, 108, 520, 24, "Documento de acompanhamento financeiro do curso", 11, "#cbd5e1")
+    _draw_text(
+        painter, 58, 108, 520, 24, "Documento de acompanhamento financeiro do curso", 11, "#cbd5e1"
+    )
 
     _draw_round(painter, 32, 164, 736, 126, "#ffffff", "#e2e8f0", radius=16)
     _draw_text(painter, 54, 176, 220, 22, "ALUNO", 9, "#64748b", True)
@@ -159,7 +174,18 @@ def _desenhar_pdf_moderno(
     _draw_text(painter, 650, 176, 80, 22, "TÉRMINO", 9, "#64748b", True)
     _draw_text(painter, 650, 199, 90, 30, termino, 14, "#0f172a", True)
     _draw_text(painter, 54, 238, 500, 24, f"HORÁRIO: {turma_texto or '-'}", 11, "#334155", True)
-    _draw_text(painter, 560, 238, 180, 24, f"VENCE TODO DIA {dia_vencimento}", 11, "#334155", True, Qt.AlignRight | Qt.AlignVCenter)
+    _draw_text(
+        painter,
+        560,
+        238,
+        180,
+        24,
+        f"VENCE TODO DIA {dia_vencimento}",
+        11,
+        "#334155",
+        True,
+        Qt.AlignRight | Qt.AlignVCenter,
+    )
 
     _draw_text(painter, 32, 314, 220, 26, "PAGAMENTOS", 12, "#334155", True)
 
@@ -178,9 +204,24 @@ def _desenhar_pdf_moderno(
         border = "#86efac" if pago else "#fed7aa"
         status_color = "#15803d" if pago else "#9a3412"
         _draw_round(painter, x, y, card_w, card_h, bg, border, radius=13)
-        _draw_text(painter, x, y + 9, card_w, 18, f"{parcela['numero']}/14", 9, "#475569", True, Qt.AlignCenter)
-        _draw_text(painter, x, y + 31, card_w, 24, parcela["mes"], 16, "#0f172a", True, Qt.AlignCenter)
-        _draw_text(painter, x, y + 58, card_w, 18, parcela["status"], 9, status_color, True, Qt.AlignCenter)
+        _draw_text(
+            painter,
+            x,
+            y + 9,
+            card_w,
+            18,
+            f"{parcela['numero']}/14",
+            9,
+            "#475569",
+            True,
+            Qt.AlignCenter,
+        )
+        _draw_text(
+            painter, x, y + 31, card_w, 24, parcela["mes"], 16, "#0f172a", True, Qt.AlignCenter
+        )
+        _draw_text(
+            painter, x, y + 58, card_w, 18, parcela["status"], 9, status_color, True, Qt.AlignCenter
+        )
 
     _draw_round(painter, 32, 552, 736, 136, "#ffffff", "#e2e8f0", radius=16)
     _draw_text(painter, 54, 570, 220, 20, "VALORES", 10, "#64748b", True)
@@ -236,13 +277,15 @@ def _html_recibo(
 ):
     linhas = []
     for bloco in range(0, 14, 7):
-        parte = parcelas[bloco:bloco + 7]
-        linhas.append("<tr>" + "".join(f"<td class='num'>{p['numero']}/14</td>" for p in parte) + "</tr>")
+        parte = parcelas[bloco : bloco + 7]
+        linhas.append(
+            "<tr>" + "".join(f"<td class='num'>{p['numero']}/14</td>" for p in parte) + "</tr>"
+        )
         linhas.append("<tr>" + "".join(f"<td class='mes'>{p['mes']}</td>" for p in parte) + "</tr>")
         linhas.append(
             "<tr>"
             + "".join(
-                f"<td class=\"{'pago' if p['status'] == 'PAGO' else 'vencer'}\">{p['status']}</td>"
+                f'<td class="{"pago" if p["status"] == "PAGO" else "vencer"}">{p["status"]}</td>'
                 for p in parte
             )
             + "</tr>"
@@ -278,11 +321,11 @@ td {{ border: 1px solid #111; padding: 6px; font-size: 14px; }}
 <tr><td class="label">1º PAGTO</td><td>{escape(data_primeiro_pagamento)}</td><td class="label">TERMINO</td><td>{escape(termino)}</td><td class="label">VALOR</td><td colspan="2">R$ {valor_mensalidade:,.2f}</td></tr>
 <tr><td class="label">vencimento</td><td colspan="2">TODO DIA {dia_vencimento}</td><td class="label">PIX</td><td colspan="3" class="pix">{escape(pix)}</td></tr>
 <tr><td colspan="7" class="secao">PAGAMENTOS</td></tr>
-{''.join(linhas)}
-<tr><td colspan="7" class="info">HORARIO: {escape(turma_texto or '-')}</td></tr>
+{"".join(linhas)}
+<tr><td colspan="7" class="info">HORARIO: {escape(turma_texto or "-")}</td></tr>
 <tr><td colspan="4" class="valor-ok">PARCELAS PAGAS ATÉ DIA {dia_vencimento}</td><td colspan="3">R$ {valor_mensalidade:,.2f}</td></tr>
 <tr><td colspan="4" class="valor-atraso">PARCELAS PAGAS DEPOIS DO VENCIMENTO</td><td colspan="3">R$ {valor_atraso:,.2f}</td></tr>
-{f'<tr><td colspan="7" class="info">OBSERVACOES: {escape(observacoes)}</td></tr>' if observacoes else ''}
+{f'<tr><td colspan="7" class="info">OBSERVACOES: {escape(observacoes)}</td></tr>' if observacoes else ""}
 <tr><td colspan="7" class="aviso">EM CASO DE CANCELAMENTO, VERIFICAR REGRAS CONTRATUAIS E VAGA DA TURMA.</td></tr>
 </table>
 </body>
@@ -306,17 +349,17 @@ def _html_recibo_moderno(
         pago = parcela["status"] == "PAGO"
         cards.append(
             f"""
-            <td class="parcela {'pago' if pago else 'pendente'}">
-                <div class="parcela-num">{parcela['numero']}/14</div>
-                <div class="parcela-mes">{escape(parcela['mes'])}</div>
-                <div class="parcela-status">{escape(parcela['status'])}</div>
+            <td class="parcela {"pago" if pago else "pendente"}">
+                <div class="parcela-num">{parcela["numero"]}/14</div>
+                <div class="parcela-mes">{escape(parcela["mes"])}</div>
+                <div class="parcela-status">{escape(parcela["status"])}</div>
             </td>
             """
         )
 
     linhas_parcelas = ""
     for idx in range(0, 14, 7):
-        linhas_parcelas += "<tr>" + "".join(cards[idx:idx + 7]) + "</tr>"
+        linhas_parcelas += "<tr>" + "".join(cards[idx : idx + 7]) + "</tr>"
 
     return f"""<!doctype html>
 <html>

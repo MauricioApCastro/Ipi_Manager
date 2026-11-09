@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import List, Optional
 
 from src.models.aluno import Aluno
 from src.models.maquina import Maquina
@@ -15,7 +14,9 @@ class AlunoRepository:
             self._add_column_if_missing(conn, "alunos", "turma_id", "INTEGER")
             self._add_column_if_missing(conn, "turmas", "segundo_dia_semana", "TEXT")
             self._add_column_if_missing(conn, "turmas", "segundo_horario", "TEXT")
-            self._add_column_if_missing(conn, "turmas", "duracao_aula_minutos", "INTEGER DEFAULT 60")
+            self._add_column_if_missing(
+                conn, "turmas", "duracao_aula_minutos", "INTEGER DEFAULT 60"
+            )
             self._add_column_if_missing(conn, "turmas", "aulas_por_semana", "INTEGER DEFAULT 2")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS aluno_modulos (
@@ -113,12 +114,15 @@ class AlunoRepository:
         with self.db.connection() as conn:
             aluno = conn.execute("SELECT nome FROM alunos WHERE id = ?", (aluno_id,)).fetchone()
             if aluno:
-                conn.execute("UPDATE maquinas SET status = 'VAGO', ocupante = NULL WHERE ocupante = ?", (aluno[0],))
+                conn.execute(
+                    "UPDATE maquinas SET status = 'VAGO', ocupante = NULL WHERE ocupante = ?",
+                    (aluno[0],),
+                )
             conn.execute("DELETE FROM aluno_modulos WHERE aluno_id = ?", (aluno_id,))
             conn.execute("DELETE FROM alunos WHERE id = ?", (aluno_id,))
             conn.commit()
 
-    def get_all(self) -> List[Aluno]:
+    def get_all(self) -> list[Aluno]:
         query = """
             SELECT id, nome, whatsapp_aluno, whatsapp_resp, cpf, nascimento,
                    licao_atual, modulo_atual, observacoes, turma_id
@@ -138,7 +142,7 @@ class AlunoRepository:
                 alunos.append(aluno)
         return alunos
 
-    def get_by_name(self, nome: str) -> Optional[Aluno]:
+    def get_by_name(self, nome: str) -> Aluno | None:
         query = """
             SELECT id, nome, whatsapp_aluno, whatsapp_resp, cpf, nascimento,
                    licao_atual, modulo_atual, observacoes, turma_id
@@ -303,10 +307,16 @@ class AlunoRepository:
 
     def _normalizar_texto_dia(self, texto):
         substituicoes = {
-            "á": "a", "à": "a", "ã": "a", "â": "a",
-            "é": "e", "ê": "e",
+            "á": "a",
+            "à": "a",
+            "ã": "a",
+            "â": "a",
+            "é": "e",
+            "ê": "e",
             "í": "i",
-            "ó": "o", "ô": "o", "õ": "o",
+            "ó": "o",
+            "ô": "o",
+            "õ": "o",
             "ú": "u",
             "ç": "c",
         }
@@ -337,7 +347,10 @@ class AlunoRepository:
                         capacidade_manual = COALESCE(capacidade_manual, 8)
                     WHERE nome = ?
                     """,
-                    [(dia1, hora1, dia2, hora2, nome) for nome, dia1, hora1, dia2, hora2 in ajustes],
+                    [
+                        (dia1, hora1, dia2, hora2, nome)
+                        for nome, dia1, hora1, dia2, hora2 in ajustes
+                    ],
                 )
                 conn.execute("""
                     UPDATE turmas
@@ -441,7 +454,7 @@ class MaquinaRepository:
     def __init__(self, db):
         self.db = db
 
-    def get_all(self) -> List[Maquina]:
+    def get_all(self) -> list[Maquina]:
         query = "SELECT id, tag, status, ocupante FROM maquinas ORDER BY tag"
         maquinas = []
         with self.db.connection() as conn:
@@ -482,7 +495,9 @@ class TurmaRepository:
         with self.db.connection() as conn:
             self._add_column_if_missing(conn, "turmas", "segundo_dia_semana", "TEXT")
             self._add_column_if_missing(conn, "turmas", "segundo_horario", "TEXT")
-            self._add_column_if_missing(conn, "turmas", "duracao_aula_minutos", "INTEGER DEFAULT 60")
+            self._add_column_if_missing(
+                conn, "turmas", "duracao_aula_minutos", "INTEGER DEFAULT 60"
+            )
             self._add_column_if_missing(conn, "turmas", "aulas_por_semana", "INTEGER DEFAULT 2")
             conn.commit()
 
@@ -598,7 +613,16 @@ class FinanceiroRepository:
             "pix": "1196321-6999",
         }
 
-    def salvar_config(self, aluno_id, data_primeiro_pagamento, parcelas_pagas, valor_mensalidade, valor_atraso, dia_vencimento, pix):
+    def salvar_config(
+        self,
+        aluno_id,
+        data_primeiro_pagamento,
+        parcelas_pagas,
+        valor_mensalidade,
+        valor_atraso,
+        dia_vencimento,
+        pix,
+    ):
         query = """
             INSERT INTO financeiro_alunos (
                 aluno_id, data_primeiro_pagamento, parcelas_pagas, valor_mensalidade,
@@ -690,7 +714,9 @@ class CursoRepository:
 
             self._add_column_if_missing(conn, "cursos", "duracao_meses", "INTEGER DEFAULT 0")
             self._add_column_if_missing(conn, "modulos", "carga_meses", "INTEGER DEFAULT 1")
-            self._add_column_if_missing(conn, "modulos", "permite_flexibilidade", "INTEGER DEFAULT 0")
+            self._add_column_if_missing(
+                conn, "modulos", "permite_flexibilidade", "INTEGER DEFAULT 0"
+            )
             conn.execute(
                 "UPDATE cursos SET duracao_meses = ? WHERE duracao_meses IS NULL OR duracao_meses < 0",
                 (self.DURACAO_PADRAO_MESES,),
@@ -728,7 +754,9 @@ class CursoRepository:
         with self.db.connection() as conn:
             if self._nome_curso_em_uso(conn, nome):
                 raise CursoDuplicadoError("Já existe um curso com este nome.")
-            cursor = conn.execute(query, (nome, self._normalizar_duracao(duracao_meses), valor_base))
+            cursor = conn.execute(
+                query, (nome, self._normalizar_duracao(duracao_meses), valor_base)
+            )
             conn.commit()
             return cursor.lastrowid
 
@@ -737,7 +765,9 @@ class CursoRepository:
         with self.db.connection() as conn:
             if self._nome_curso_em_uso(conn, nome, curso_id):
                 raise CursoDuplicadoError("Já existe um curso com este nome.")
-            conn.execute(query, (nome, self._normalizar_duracao(duracao_meses), valor_base, curso_id))
+            conn.execute(
+                query, (nome, self._normalizar_duracao(duracao_meses), valor_base, curso_id)
+            )
             conn.commit()
 
     def delete_curso(self, curso_id):
@@ -785,7 +815,15 @@ class CursoRepository:
         with self.db.connection() as conn:
             return conn.execute(query).fetchall()
 
-    def add_modulo(self, curso_id, nome, ordem, carga_meses=1, permite_flexibilidade=False, pre_requisito_id=None):
+    def add_modulo(
+        self,
+        curso_id,
+        nome,
+        ordem,
+        carga_meses=1,
+        permite_flexibilidade=False,
+        pre_requisito_id=None,
+    ):
         query = """
             INSERT INTO modulos (
                 id_curso, nome, ordem, carga_meses, permite_flexibilidade, pre_requisito_id
@@ -800,7 +838,15 @@ class CursoRepository:
             conn.commit()
             return cursor.lastrowid
 
-    def update_modulo(self, modulo_id, nome, ordem, carga_meses=1, permite_flexibilidade=False, pre_requisito_id=None):
+    def update_modulo(
+        self,
+        modulo_id,
+        nome,
+        ordem,
+        carga_meses=1,
+        permite_flexibilidade=False,
+        pre_requisito_id=None,
+    ):
         query = """
             UPDATE modulos
             SET nome = ?, ordem = ?, carga_meses = ?, permite_flexibilidade = ?, pre_requisito_id = ?
@@ -815,7 +861,10 @@ class CursoRepository:
 
     def delete_modulo(self, modulo_id):
         with self.db.connection() as conn:
-            conn.execute("UPDATE modulos SET pre_requisito_id = NULL WHERE pre_requisito_id = ?", (modulo_id,))
+            conn.execute(
+                "UPDATE modulos SET pre_requisito_id = NULL WHERE pre_requisito_id = ?",
+                (modulo_id,),
+            )
             conn.execute("DELETE FROM aluno_modulos WHERE modulo_id = ?", (modulo_id,))
             conn.execute("DELETE FROM aulas WHERE id_modulo = ?", (modulo_id,))
             conn.execute("DELETE FROM modulos WHERE id = ?", (modulo_id,))
@@ -889,7 +938,9 @@ class CaixaRepository:
                     observacoes TEXT
                 )
             """)
-            self._add_column_if_missing(conn, "caixa_entradas", "tipo", "TEXT NOT NULL DEFAULT 'ENTRADA'")
+            self._add_column_if_missing(
+                conn, "caixa_entradas", "tipo", "TEXT NOT NULL DEFAULT 'ENTRADA'"
+            )
             conn.commit()
 
     def _add_column_if_missing(self, conn, tabela, coluna, definicao):
@@ -897,24 +948,32 @@ class CaixaRepository:
         if coluna not in colunas:
             conn.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao}")
 
-    def add_entrada(self, data, descricao, categoria, valor, status, observacoes="", tipo="ENTRADA"):
+    def add_entrada(
+        self, data, descricao, categoria, valor, status, observacoes="", tipo="ENTRADA"
+    ):
         query = """
             INSERT INTO caixa_entradas (data, descricao, categoria, valor, status, observacoes, tipo)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """
         with self.db.connection() as conn:
-            cursor = conn.execute(query, (data, descricao, categoria, valor, status, observacoes, tipo))
+            cursor = conn.execute(
+                query, (data, descricao, categoria, valor, status, observacoes, tipo)
+            )
             conn.commit()
             return cursor.lastrowid
 
-    def update_entrada(self, entrada_id, data, descricao, categoria, valor, status, observacoes="", tipo="ENTRADA"):
+    def update_entrada(
+        self, entrada_id, data, descricao, categoria, valor, status, observacoes="", tipo="ENTRADA"
+    ):
         query = """
             UPDATE caixa_entradas
             SET data = ?, descricao = ?, categoria = ?, valor = ?, status = ?, observacoes = ?, tipo = ?
             WHERE id = ?
         """
         with self.db.connection() as conn:
-            conn.execute(query, (data, descricao, categoria, valor, status, observacoes, tipo, entrada_id))
+            conn.execute(
+                query, (data, descricao, categoria, valor, status, observacoes, tipo, entrada_id)
+            )
             conn.commit()
 
     def delete_entrada(self, entrada_id):
@@ -937,9 +996,13 @@ class CaixaRepository:
     def totais_mes(self, ano, mes):
         entradas = self.get_entradas_mes(ano, mes)
         entradas_previstas = sum(row[4] or 0 for row in entradas if row[7] == "ENTRADA")
-        entradas_recebidas = sum(row[4] or 0 for row in entradas if row[7] == "ENTRADA" and row[5] == "RECEBIDO")
+        entradas_recebidas = sum(
+            row[4] or 0 for row in entradas if row[7] == "ENTRADA" and row[5] == "RECEBIDO"
+        )
         saidas_previstas = sum(row[4] or 0 for row in entradas if row[7] == "SAIDA")
-        saidas_pagas = sum(row[4] or 0 for row in entradas if row[7] == "SAIDA" and row[5] == "RECEBIDO")
+        saidas_pagas = sum(
+            row[4] or 0 for row in entradas if row[7] == "SAIDA" and row[5] == "RECEBIDO"
+        )
         return entradas_previstas, entradas_recebidas, saidas_previstas, saidas_pagas
 
 

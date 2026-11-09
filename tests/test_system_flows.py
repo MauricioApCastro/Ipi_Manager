@@ -18,7 +18,6 @@ from src.models.aluno import Aluno
 from src.services.recibo_service import gerar_recibo_pagamento_pdf
 from src.ui.windows.main_window import MainWindow
 
-
 APP = QApplication.instance() or QApplication([])
 
 
@@ -38,7 +37,9 @@ class SistemaFluxosTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def criar_aluno(self, nome="Aluno Teste", nascimento="10/01/2010", turma_id=None, modulos_ids=None):
+    def criar_aluno(
+        self, nome="Aluno Teste", nascimento="10/01/2010", turma_id=None, modulos_ids=None
+    ):
         aluno = Aluno(
             None,
             nome,
@@ -57,7 +58,9 @@ class SistemaFluxosTest(unittest.TestCase):
 
     def test_curso_modulo_aula_cronograma_e_exclusao(self):
         curso_id = self.cursos.add_curso("Curso Teste", 14, 135.0)
-        modulo_id = self.cursos.add_modulo(curso_id, "Modulo Inicial", 1, permite_flexibilidade=True)
+        modulo_id = self.cursos.add_modulo(
+            curso_id, "Modulo Inicial", 1, permite_flexibilidade=True
+        )
         aula_id = self.cursos.add_aula(modulo_id, "Aula 01", 1, "Introducao")
 
         cursos = self.cursos.get_cursos()
@@ -165,7 +168,7 @@ class SistemaFluxosTest(unittest.TestCase):
         modulo_id = self.cursos.add_modulo(curso_id, "Modulo 01", 1)
         turma_id = self.turmas.add("Turma A", "Segunda", "08:00", "Quarta", "08:00", 8)
 
-        aluno = self.criar_aluno("Aluno CRUD", turma_id=turma_id, modulos_ids=[modulo_id])
+        self.criar_aluno("Aluno CRUD", turma_id=turma_id, modulos_ids=[modulo_id])
         salvo = self.alunos.get_by_name("Aluno CRUD")
 
         self.assertIsNotNone(salvo.id)
@@ -239,7 +242,9 @@ class SistemaFluxosTest(unittest.TestCase):
         self.assertRegex(data_mensagem, r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
 
         with self.db.connection() as conn:
-            presencas = conn.execute("SELECT COUNT(*) FROM presencas WHERE aluno_id = ?", (aluno.id,)).fetchone()[0]
+            presencas = conn.execute(
+                "SELECT COUNT(*) FROM presencas WHERE aluno_id = ?", (aluno.id,)
+            ).fetchone()[0]
             mensagens = conn.execute(
                 "SELECT COUNT(*) FROM mensagens_responsavel WHERE aluno_id = ?",
                 (aluno.id,),

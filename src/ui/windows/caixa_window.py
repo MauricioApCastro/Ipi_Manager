@@ -1,12 +1,27 @@
 import csv
 from datetime import datetime
 
+from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QLabel, QPushButton,
-    QLineEdit, QSpinBox, QDoubleSpinBox, QDateEdit, QComboBox, QFileDialog,
-    QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView, QSplitter,
+    QComboBox,
+    QDateEdit,
+    QDoubleSpinBox,
+    QFileDialog,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QSplitter,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt5.QtCore import Qt, QDate
 
 from src.database.repositories import CaixaRepository
 
@@ -157,7 +172,9 @@ class CaixaWindow(QWidget):
         cards.addWidget(self.card_saldo)
 
         self.tbl_entradas = QTableWidget(0, 5)
-        self.tbl_entradas.setHorizontalHeaderLabels(["Data", "Descricao", "Categoria", "Valor", "Status"])
+        self.tbl_entradas.setHorizontalHeaderLabels(
+            ["Data", "Descricao", "Categoria", "Valor", "Status"]
+        )
         self.tbl_entradas.itemSelectionChanged.connect(self.carregar_entrada_selecionada)
         self._preparar_tabela(self.tbl_entradas)
 
@@ -171,7 +188,8 @@ class CaixaWindow(QWidget):
             return
 
         entradas = [
-            entrada for entrada in self.repo.get_entradas_mes(self.spin_ano.value(), self.spin_mes.value())
+            entrada
+            for entrada in self.repo.get_entradas_mes(self.spin_ano.value(), self.spin_mes.value())
             if entrada[7] == "ENTRADA"
         ]
         categoria_filtro = self.combo_filtro_categoria.currentData()
@@ -213,7 +231,9 @@ class CaixaWindow(QWidget):
         if not self.entrada_selecionada_id:
             QMessageBox.warning(self, "Caixa", "Selecione um movimento para excluir.")
             return
-        resposta = QMessageBox.question(self, "Caixa", "Deseja excluir este movimento?", QMessageBox.Yes | QMessageBox.No)
+        resposta = QMessageBox.question(
+            self, "Caixa", "Deseja excluir este movimento?", QMessageBox.Yes | QMessageBox.No
+        )
         if resposta != QMessageBox.Yes:
             return
         self.repo.delete_entrada(self.entrada_selecionada_id)
@@ -300,7 +320,10 @@ class CaixaWindow(QWidget):
 
     def exportar_csv(self):
         destino, _ = QFileDialog.getSaveFileName(
-            self, "Exportar caixa", f"caixa_{self.spin_ano.value()}_{self.spin_mes.value():02d}.csv", "CSV (*.csv)"
+            self,
+            "Exportar caixa",
+            f"caixa_{self.spin_ano.value()}_{self.spin_mes.value():02d}.csv",
+            "CSV (*.csv)",
         )
         if not destino:
             return
@@ -308,10 +331,14 @@ class CaixaWindow(QWidget):
             writer = csv.writer(arquivo, delimiter=";")
             writer.writerow(["Data", "Descricao", "Categoria", "Valor", "Status"])
             for row in range(self.tbl_entradas.rowCount()):
-                writer.writerow([
-                    self.tbl_entradas.item(row, col).text() if self.tbl_entradas.item(row, col) else ""
-                    for col in range(self.tbl_entradas.columnCount())
-                ])
+                writer.writerow(
+                    [
+                        self.tbl_entradas.item(row, col).text()
+                        if self.tbl_entradas.item(row, col)
+                        else ""
+                        for col in range(self.tbl_entradas.columnCount())
+                    ]
+                )
         QMessageBox.information(self, "Caixa", f"Relatorio exportado:\n{destino}")
 
     def _data_qdate(self, texto):

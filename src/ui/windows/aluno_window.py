@@ -1,26 +1,26 @@
 from calendar import monthrange
-from datetime import datetime, date
+from datetime import date, datetime
 
-from PyQt5.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QGridLayout,
-    QFrame,
-    QLabel,
-    QPushButton,
-    QLineEdit,
-    QComboBox,
-    QCheckBox,
-    QTextEdit,
-    QTableWidget,
-    QTableWidgetItem,
-    QHeaderView,
-    QMessageBox,
-    QSplitter,
-)
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QCursor
+from PyQt5.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSplitter,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.database.repositories import AlunoRepository, CursoRepository, FinanceiroRepository
 from src.models.aluno import Aluno
@@ -141,7 +141,9 @@ class AlunoWindow(QWidget):
         botao_area = self.btn_abrir_calendario.rect()
         botao_area.moveTopLeft(self.btn_abrir_calendario.mapTo(self, botao_area.topLeft()))
 
-        if not area.contains(pos) and not botao_area.adjusted(-margem, -margem, margem, margem).contains(pos):
+        if not area.contains(pos) and not botao_area.adjusted(
+            -margem, -margem, margem, margem
+        ).contains(pos):
             self._ocultar_calendario()
 
     def _criar_painel_dados(self):
@@ -259,7 +261,9 @@ class AlunoWindow(QWidget):
         for indice in range(42):
             botao = QPushButton("")
             botao.setFixedSize(38, 32)
-            botao.clicked.connect(lambda _checked=False, b=botao: self._selecionar_dia_pagamento(b.property("dia")))
+            botao.clicked.connect(
+                lambda _checked=False, b=botao: self._selecionar_dia_pagamento(b.property("dia"))
+            )
             self.botoes_dia_pagamento.append(botao)
             self.grid_pagamento.addWidget(botao, (indice // 7) + 1, indice % 7)
 
@@ -296,17 +300,19 @@ class AlunoWindow(QWidget):
         layout = painel.layout()
 
         self.tbl_alunos = QTableWidget(0, 9)
-        self.tbl_alunos.setHorizontalHeaderLabels([
-            "Nome",
-            "Turma",
-            "Pagamento",
-            "Tel. aluno",
-            "Status",
-            "Nasc.",
-            "Tel. resp.",
-            "Módulo",
-            "Aula",
-        ])
+        self.tbl_alunos.setHorizontalHeaderLabels(
+            [
+                "Nome",
+                "Turma",
+                "Pagamento",
+                "Tel. aluno",
+                "Status",
+                "Nasc.",
+                "Tel. resp.",
+                "Módulo",
+                "Aula",
+            ]
+        )
         self.tbl_alunos.itemSelectionChanged.connect(self.carregar_aluno_selecionado)
         self._preparar_tabela(self.tbl_alunos)
 
@@ -395,9 +401,9 @@ class AlunoWindow(QWidget):
             return
 
         filtrados = [
-            aluno for aluno in self.alunos
-            if termo in (aluno.nome or "").lower()
-            or termo in (aluno.modulo_atual or "").lower()
+            aluno
+            for aluno in self.alunos
+            if termo in (aluno.nome or "").lower() or termo in (aluno.modulo_atual or "").lower()
         ]
         self.preencher_tabela(filtrados)
 
@@ -411,7 +417,9 @@ class AlunoWindow(QWidget):
         self.aluno_em_edicao_id = aluno.id
         self.txt_nome.setText(aluno.nome or "")
         self.txt_nascimento.setText(aluno.nascimento or "")
-        self._definir_data_pagamento(self.repo_financeiro.get_config(aluno.id)["data_primeiro_pagamento"])
+        self._definir_data_pagamento(
+            self.repo_financeiro.get_config(aluno.id)["data_primeiro_pagamento"]
+        )
         self.txt_whatsapp.setText(aluno.whatsapp_aluno or "")
         self.txt_whatsapp_resp.setText(aluno.whatsapp_resp or "")
         self.txt_obs.setPlainText(aluno.observacoes or "")
@@ -500,27 +508,25 @@ class AlunoWindow(QWidget):
 
         nascimento = self.txt_nascimento.text().strip()
         if "_" in nascimento or len(nascimento) != 10:
-            QMessageBox.warning(self, "Nascimento", "Informe a data de nascimento no formato dd/mm/aaaa.")
+            QMessageBox.warning(
+                self, "Nascimento", "Informe a data de nascimento no formato dd/mm/aaaa."
+            )
             return None
 
         if not self._data_pagamento_atual():
-            QMessageBox.warning(self, "Pagamento", "Selecione o dia do primeiro pagamento no calendario.")
+            QMessageBox.warning(
+                self, "Pagamento", "Selecione o dia do primeiro pagamento no calendario."
+            )
             return None
 
-        modulos_ids = [
-            chk.property("modulo_id")
-            for chk in self.modulo_checks
-            if chk.isChecked()
-        ]
+        modulos_ids = [chk.property("modulo_id") for chk in self.modulo_checks if chk.isChecked()]
         if not modulos_ids:
-            QMessageBox.warning(self, "Módulos", "Escolha pelo menos um módulo para matricular o aluno.")
+            QMessageBox.warning(
+                self, "Módulos", "Escolha pelo menos um módulo para matricular o aluno."
+            )
             return None
 
-        nomes_modulos = [
-            chk.text()
-            for chk in self.modulo_checks
-            if chk.isChecked()
-        ]
+        nomes_modulos = [chk.text() for chk in self.modulo_checks if chk.isChecked()]
 
         aluno = Aluno(
             None,
@@ -603,7 +609,9 @@ class AlunoWindow(QWidget):
             "Novembro",
             "Dezembro",
         )
-        self.lbl_mes_pagamento.setText(f"{nomes_meses[self.mes_pagamento - 1]} {self.ano_pagamento}")
+        self.lbl_mes_pagamento.setText(
+            f"{nomes_meses[self.mes_pagamento - 1]} {self.ano_pagamento}"
+        )
 
         primeiro_dia_semana, total_dias = monthrange(self.ano_pagamento, self.mes_pagamento)
         for indice, botao in enumerate(self.botoes_dia_pagamento):
@@ -665,7 +673,9 @@ class AlunoWindow(QWidget):
                 return True
 
             if aluno.id:
-                aluno_atual = next((item for item in self.repo.get_all() if item.id == aluno.id), None)
+                aluno_atual = next(
+                    (item for item in self.repo.get_all() if item.id == aluno.id), None
+                )
                 if aluno_atual and aluno_atual.turma_id == aluno.turma_id:
                     return True
 

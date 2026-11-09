@@ -1,24 +1,23 @@
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QFrame,
-    QLabel,
-    QPushButton,
-    QLineEdit,
-    QSpinBox,
-    QDoubleSpinBox,
-    QComboBox,
+    QApplication,
     QCheckBox,
-    QGridLayout,
+    QComboBox,
+    QDoubleSpinBox,
+    QFrame,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QSplitter,
     QTableWidget,
     QTableWidgetItem,
-    QHeaderView,
-    QMessageBox,
-    QSplitter,
-    QApplication,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt5.QtCore import Qt
 
 from src.database.repositories import CursoDuplicadoError, CursoRepository
 
@@ -33,7 +32,11 @@ class CursoWindow(QWidget):
         self.aula_em_edicao_id = None
         self.modulos = []
         self.aulas_modulo = []
-        monitor = QApplication.primaryScreen().availableGeometry() if QApplication.primaryScreen() else None
+        monitor = (
+            QApplication.primaryScreen().availableGeometry()
+            if QApplication.primaryScreen()
+            else None
+        )
         self.compacto = bool(monitor and (monitor.width() <= 1366 or monitor.height() <= 760))
 
         self.setup_ui()
@@ -53,7 +56,9 @@ class CursoWindow(QWidget):
         title_box.setSpacing(0)
 
         titulo = QLabel("Cursos")
-        titulo.setStyleSheet(f"color: #0f172a; font-size: {26 if self.compacto else 30}px; font-weight: 900;")
+        titulo.setStyleSheet(
+            f"color: #0f172a; font-size: {26 if self.compacto else 30}px; font-weight: 900;"
+        )
 
         title_box.addWidget(titulo)
         header.addLayout(title_box)
@@ -132,7 +137,9 @@ class CursoWindow(QWidget):
         self.btn_excluir_curso.clicked.connect(self.excluir_curso)
         self.btn_excluir_curso.setStyleSheet(self._danger_button_style())
 
-        self._adicionar_botoes_padrao(botoes, self.btn_salvar_curso, self.btn_atualizar_curso, self.btn_excluir_curso)
+        self._adicionar_botoes_padrao(
+            botoes, self.btn_salvar_curso, self.btn_atualizar_curso, self.btn_excluir_curso
+        )
 
         layout.addWidget(self.txt_curso)
         layout.addLayout(linha)
@@ -177,7 +184,9 @@ class CursoWindow(QWidget):
         self.btn_excluir_modulo.clicked.connect(self.excluir_modulo)
         self.btn_excluir_modulo.setStyleSheet(self._danger_button_style())
 
-        self._adicionar_botoes_padrao(botoes, self.btn_add_modulo, self.btn_update_modulo, self.btn_excluir_modulo)
+        self._adicionar_botoes_padrao(
+            botoes, self.btn_add_modulo, self.btn_update_modulo, self.btn_excluir_modulo
+        )
 
         layout.addWidget(self.txt_modulo)
         layout.addLayout(linha)
@@ -225,7 +234,9 @@ class CursoWindow(QWidget):
         self.btn_excluir_aula.clicked.connect(self.excluir_aula)
         self.btn_excluir_aula.setStyleSheet(self._danger_button_style())
 
-        self._adicionar_botoes_padrao(botoes, self.btn_add_aula, self.btn_update_aula, self.btn_excluir_aula)
+        self._adicionar_botoes_padrao(
+            botoes, self.btn_add_aula, self.btn_update_aula, self.btn_excluir_aula
+        )
 
         layout.addWidget(self.combo_modulo_aula)
         layout.addLayout(linha)
@@ -304,7 +315,9 @@ class CursoWindow(QWidget):
             return
 
         cursos = self.repo.get_cursos()
-        self.curso_atual = next((curso for curso in cursos if curso[0] == self.curso_atual_id), None)
+        self.curso_atual = next(
+            (curso for curso in cursos if curso[0] == self.curso_atual_id), None
+        )
         if self.curso_atual:
             self.txt_curso.setText(self.curso_atual[1])
             self.spin_meses.setValue(int(self.curso_atual[2] or 0))
@@ -390,7 +403,9 @@ class CursoWindow(QWidget):
 
     def salvar_modulo(self):
         if not self.curso_atual_id:
-            QMessageBox.warning(self, "Módulo", "Cadastre ou gere um curso antes de adicionar módulos.")
+            QMessageBox.warning(
+                self, "Módulo", "Cadastre ou gere um curso antes de adicionar módulos."
+            )
             return
 
         nome = self.txt_modulo.text().strip()

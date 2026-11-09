@@ -1,6 +1,15 @@
-from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QLineEdit, QPushButton, QDateEdit, QFormLayout)
-from PyQt5.QtCore import QDate, Qt
+from PyQt5.QtCore import QDate
+from PyQt5.QtWidgets import (
+    QDateEdit,
+    QDialog,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+)
+
 
 class CadastroAlunoWindow(QDialog):
     def __init__(self, parent=None):
@@ -16,7 +25,9 @@ class CadastroAlunoWindow(QDialog):
         layout.setContentsMargins(38, 38, 38, 38)
 
         titulo = QLabel("Novo Aluno")
-        titulo.setStyleSheet("font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 20px;")
+        titulo.setStyleSheet(
+            "font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 20px;"
+        )
         layout.addWidget(titulo)
 
         form = QFormLayout()
@@ -26,7 +37,7 @@ class CadastroAlunoWindow(QDialog):
         self.txt_nome = self._criar_input("Nome Completo")
         self.txt_whatsapp = self._criar_input("(11) 90000-0000")
         self.txt_whatsapp_resp = self._criar_input("(11) 90000-0000 (Obrigatório para menores)")
-        
+
         # Campo de Data (Essencial para a lógica de menor de idade)
         self.date_nascimento = QDateEdit()
         self.date_nascimento.setCalendarPopup(True)
@@ -47,12 +58,14 @@ class CadastroAlunoWindow(QDialog):
         btn_layout = QHBoxLayout()
         self.btn_cancelar = QPushButton("Cancelar")
         self.btn_salvar = QPushButton("Salvar Cadastro")
-        
+
         self.btn_salvar.setStyleSheet("""
             QPushButton { background-color: #3b82f6; color: white; font-size: 20px; font-weight: bold; padding: 16px; border-radius: 6px; }
             QPushButton:hover { background-color: #2563eb; }
         """)
-        self.btn_cancelar.setStyleSheet("font-size: 20px; padding: 16px; border: none; color: #64748b;")
+        self.btn_cancelar.setStyleSheet(
+            "font-size: 20px; padding: 16px; border: none; color: #64748b;"
+        )
 
         btn_layout.addWidget(self.btn_cancelar)
         btn_layout.addWidget(self.btn_salvar)
@@ -79,5 +92,5 @@ class CadastroAlunoWindow(QDialog):
             "cpf": "",
             "whatsapp_aluno": self.txt_whatsapp.text(),
             "whatsapp_resp": self.txt_whatsapp_resp.text(),
-            "modulo_atual": "Introdução" # Padrão inicial
+            "modulo_atual": "Introdução",  # Padrão inicial
         }

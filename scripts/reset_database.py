@@ -1,6 +1,5 @@
-from pathlib import Path
 import sqlite3
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATABASES = [
@@ -32,8 +31,7 @@ def reset_database(path):
         cur = conn.cursor()
         cur.execute("PRAGMA foreign_keys = OFF")
         existing = {
-            row[0]
-            for row in cur.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+            row[0] for row in cur.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
 
         for table in TABLES:

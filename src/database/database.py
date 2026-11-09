@@ -1,6 +1,7 @@
 import sqlite3
 from contextlib import contextmanager
 
+
 class Database:
     def __init__(self, db_name="escola.db"):
         self.db_name = db_name

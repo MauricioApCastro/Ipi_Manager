@@ -1,8 +1,25 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTabWidget, QListWidget, QListWidgetItem, QPushButton, QHBoxLayout, QLabel
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QTabWidget,
+    QVBoxLayout,
+)
+
 
 class SeletorAlunoDialog(QDialog):
-    def __init__(self, alunos_turma, todos_alunos, parent=None, titulo_turma="Alunos do horário", turmas_hoje=None):
+    def __init__(
+        self,
+        alunos_turma,
+        todos_alunos,
+        parent=None,
+        titulo_turma="Alunos do horário",
+        turmas_hoje=None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Selecionar Aluno")
         self.resize(620, 720)
@@ -43,7 +60,7 @@ class SeletorAlunoDialog(QDialog):
         self.btn_confirmar.clicked.connect(self.confirmar)
         self.btn_cancelar = QPushButton("Cancelar")
         self.btn_cancelar.clicked.connect(self.reject)
-        
+
         btn_layout.addWidget(self.btn_cancelar)
         btn_layout.addWidget(self.btn_confirmar)
         layout.addLayout(btn_layout)
@@ -59,7 +76,9 @@ class SeletorAlunoDialog(QDialog):
 
     def _preencher_turmas_hoje(self, turmas_hoje):
         if not turmas_hoje:
-            self._adicionar_item_desativado(self.lista_turmas_hoje, "Nenhuma turma cadastrada para hoje")
+            self._adicionar_item_desativado(
+                self.lista_turmas_hoje, "Nenhuma turma cadastrada para hoje"
+            )
             return
 
         for horario, turma, alunos in turmas_hoje:
@@ -68,7 +87,9 @@ class SeletorAlunoDialog(QDialog):
                 for aluno in alunos:
                     self._adicionar_aluno(self.lista_turmas_hoje, f"   {aluno.nome}", aluno.nome)
             else:
-                self._adicionar_item_desativado(self.lista_turmas_hoje, "   Nenhum aluno matriculado")
+                self._adicionar_item_desativado(
+                    self.lista_turmas_hoje, "   Nenhum aluno matriculado"
+                )
 
     def _adicionar_aluno(self, lista, texto, nome=None):
         item = QListWidgetItem(texto)
